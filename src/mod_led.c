@@ -55,7 +55,7 @@ void mod_led_off(ModLED* ledp)
 
 void mod_led_shutdown(ModLED* ledp)
 {
-    (void*)ledp;
+    (void)ledp;
 }
 
 /** @} */
