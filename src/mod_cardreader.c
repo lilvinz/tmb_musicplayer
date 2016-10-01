@@ -8,6 +8,11 @@
 
 #include "mod_cardreader.h"
 
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+
 #include "ch.h"
 #include "targetconf.h"
 #include "chprintf.h"
@@ -19,12 +24,15 @@ typedef struct {
     CardReaderConfig* cfgp;
     thread_t* cardDetectionThreadp;
     bool cardDetected;
-    FATFS* mmcFSp;
+    FATFS* fsp;
 } ModCardReaderData;
 
 static ModCardReaderData modCardReaderData;
 static THD_WORKING_AREA(waCardReader, MOD_CARDREADER_THREADSIZE);
-static FATFS MMC_FS;
+static FATFS SDC_FS;
+
+/* Generic large buffer.*/
+static char fbuff[1024];
 
 static char* fresult_str(FRESULT stat)
 {
@@ -79,12 +87,108 @@ static void printError(BaseSequentialStream *chp, FRESULT err)
 {
     chprintf(chp, "\t%s.\r\n",fresult_str(err));
 }
+
+/*
+ * Scan Files in a path and print them to the character stream.
+ */
+static FRESULT listFiles(BaseSequentialStream *chp, char *path) {
+    FRESULT res;
+    FILINFO fno;
+    DIR dir;
+    int fyear,fmonth,fday,fhour,fminute,fsecond;
+
+    int i;
+    char *fn;
+
+#if _USE_LFN
+    fno.lfname = 0;
+    fno.lfsize = 0;
+#endif
+    /*
+     * Open the Directory.
+     */
+    res = f_opendir(&dir, path);
+    if (res == FR_OK) {
+        /*
+         * If the path opened successfully.
+         */
+        i = strlen(path);
+        while (true) {
+            /*
+             * Read the Directory.
+             */
+            res = f_readdir(&dir, &fno);
+            /*
+             * If the directory read failed or the
+             */
+            if (res != FR_OK || fno.fname[0] == 0) {
+                break;
+            }
+            /*
+             * If the directory or file begins with a '.' (hidden), continue
+             */
+            if (fno.fname[0] == '.') {
+                continue;
+            }
+            fn = fno.fname;
+            /*
+             * Extract the date.
+             */
+            fyear = ((0b1111111000000000&fno.fdate) >> 9)+1980;
+            fmonth= (0b0000000111100000&fno.fdate) >> 5;
+            fday  = (0b0000000000011111&fno.fdate);
+            /*
+             * Extract the time.
+             */
+            fhour   = (0b1111100000000000&fno.ftime) >> 11;
+            fminute = (0b0000011111100000&fno.ftime) >> 5;
+            fsecond = (0b0000000000011111&fno.ftime)*2;
+            /*
+             * Print date and time of the file.
+             */
+            chprintf(chp, "%4d-%02d-%02d %02d:%02d:%02d ", fyear, fmonth, fday, fhour, fminute, fsecond);
+            /*
+             * If the 'file' is a directory.
+             */
+            if (fno.fattrib & AM_DIR) {
+                /*
+                 * Add a slash to the end of the path
+                 */
+                path[i++] = '/';
+                strcpy(&path[i], fn);
+                /*
+                 * Print that it is a directory and the path.
+                 */
+                chprintf(chp, "<DIR> %s/\r\n", path);
+                /*
+                 * Recursive call to scan the files.
+                 */
+                res = listFiles(chp, path);
+                if (res != FR_OK) {
+                    break;
+                }
+                path[--i] = 0;
+            } else {
+                /*
+                 * Otherwise print the path as a file.
+                 */
+                chprintf(chp, "      %s/%s\r\n", path, fn);
+            }
+        }
+    }
+    else
+    {
+        chprintf(chp, "FS: f_opendir() failed\r\n");
+    }
+    return res;
+}
+
 static bool mountFS(ModCardReaderData* datap)
 {
-    if (mmcConnect(datap->cfgp->mmc) == HAL_SUCCESS)
+    if (sdcConnect(datap->cfgp->sdc) == HAL_SUCCESS)
     {
         FRESULT err;
-        err = f_mount(datap->mmcFSp, "/mount/", 1);
+        err = f_mount(datap->fsp, "/mount/", 1);
         if (err != FR_OK) {
             chprintf(DEBUG_CANNEL, "FS: f_mount() failed. Is the SD card inserted?\r\n");
             printError(DEBUG_CANNEL, err);
@@ -94,6 +198,7 @@ static bool mountFS(ModCardReaderData* datap)
 
         return true;
     }
+    chprintf(DEBUG_CANNEL, "Failed to connect sdc card.\r\n");
 
     return false;
 }
@@ -104,13 +209,14 @@ static bool unmountFS(ModCardReaderData* datap)
 
     err = f_mount(NULL, "/mount/", 0);
 
-    mmcDisconnect(datap->cfgp->mmc);
+    sdcDisconnect(datap->cfgp->sdc);
     if (err != FR_OK) {
         chprintf(DEBUG_CANNEL, "FS: f_mount() unmount failed\r\n");
         printError(DEBUG_CANNEL, err);
         return false;
     }
 
+    chprintf(DEBUG_CANNEL, "FS: f_mount() unmount succeeded\r\n");
     return true;
 }
 
@@ -182,7 +288,7 @@ static THD_FUNCTION(cardReader, arg)
 void mod_cardreader_init(CardReaderConfig* cfgp)
 {
     modCardReaderData.cfgp = cfgp;
-    modCardReaderData.mmcFSp = &MMC_FS;
+    modCardReaderData.fsp = &SDC_FS;
 }
 
 bool mod_cardreader_start(void)
@@ -205,5 +311,14 @@ void mod_cardreader_stop(void)
     }
 }
 
+void mod_cardreader_ls(BaseSequentialStream *chp)
+{
+    /*
+     * Set the file path buffer to 0
+     */
+
+    memset(fbuff,0,sizeof(fbuff));
+    listFiles(chp, fbuff);
+}
 
 /** @} */

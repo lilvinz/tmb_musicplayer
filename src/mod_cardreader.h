@@ -39,7 +39,7 @@
  * @brief   Cardreader descriptor type.
  */
 typedef struct {
-    MMCDriver* mmc;
+    SDCDriver* sdc;
     ModLED* ledCardDetect;
 
     /*Card detection pin*/
@@ -62,6 +62,8 @@ extern "C" {
   void mod_cardreader_init(CardReaderConfig* cfgp);
   bool mod_cardreader_start(void);
   void mod_cardreader_stop(void);
+
+  void mod_cardreader_ls(BaseSequentialStream *chp);
 #ifdef __cplusplus
 }
 #endif

@@ -87,6 +87,7 @@ PROJECT = tmb_musicbox
 
 # Imported source files and paths
 CHIBIOS = submodules/ChibiOS
+MFRC522 = submodules/mfrc522
 # Startup files.
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_stm32f4xx.mk
 # HAL-OSAL files (optional).
@@ -123,10 +124,11 @@ CSRC = $(STARTUPSRC) \
        $(CHIBIOS)/os/hal/lib/streams/memstreams.c \
        $(CHIBIOS)/os/hal/lib/streams/chprintf.c \
        $(FATFSSRC) \
+       ${MFRC522}/mfrc522.c \
        $(PRJ_SRC)/usbcfg.c \
-       $(PRJ_SRC)/mmc.c \
        $(PRJ_SRC)/mod_led.c \
-	   $(PRJ_SRC)/mod_cardreader.c \
+       $(PRJ_SRC)/mod_cardreader.c \
+       $(PRJ_SRC)/mod_rfid.c \
        board_drivers.c \
        main.c
 
@@ -163,6 +165,7 @@ INCDIR = target \
          $(FATFSINC) \
          $(CHIBIOS)/os/hal/lib/streams \
          $(CHIBIOS)/os/various \
+         $(MFRC522) \
          src
 
 #
