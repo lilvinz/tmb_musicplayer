@@ -25,9 +25,10 @@
 #include <string.h>
 
 #include "usbcfg.h"
-#include "mmc.h"
 #include "mod_led.h"
 #include "mod_cardreader.h"
+#include "mod_rfid.h"
+#include "mfrc522.h"
 
 #include <stdlib.h>
 
@@ -37,18 +38,48 @@ ModLED LED_GREEN;
 ModLED LED_BLUE;
 ModLED LED_RED;
 
-MMCDriver MMCD1;
-
 static CardReaderConfig cardReaderCfg =
 {
-        .mmc = &MMCD1,
+        .sdc = &SDCD1,
         .ledCardDetect = &LED_GREEN,
 
         /*Card detection pin*/
-        .gpio = GPIOC,
-        .pin = GPIOC_PIN5,
+        .gpio = GPIOA,
+        .pin = 15U,
         .setOn = false
 };
+
+MFRC522Driver RFID1;
+
+static RFIDConfig rfidCfg =
+{
+        .mfrcd = &RFID1,
+        .ledCardDetect = &LED_ORANGE,
+};
+
+static uint8_t txbuf[2];
+static uint8_t rxbuf[2];
+
+void MFRC522WriteRegister(MFRC522Driver* mfrc522p, uint8_t addr, uint8_t val)
+{
+    (void)mfrc522p;
+    spiSelect(&SPID1);
+    txbuf[0] = (addr << 1) & 0x7E;
+    txbuf[1] = val;
+    spiSend(&SPID1, 2, txbuf);
+    spiUnselect(&SPID1);
+}
+
+uint8_t MFRC522ReadRegister(MFRC522Driver* mfrc522p, uint8_t addr)
+{
+    (void)mfrc522p;
+    spiSelect(&SPID1);
+    txbuf[0] = ((addr << 1) & 0x7E) | 0x80;
+    txbuf[1] = 0xff;
+    spiExchange(&SPID1, 2, txbuf, rxbuf);
+    spiUnselect(&SPID1);
+    return rxbuf[1];
+}
 
 
 
@@ -90,13 +121,24 @@ static void cmd_threads(BaseSequentialStream *chp, int argc, char *argv[]) {
   } while (tp != NULL);
 }
 
+static void cmd_ls(BaseSequentialStream *chp, int argc, char *argv[]) {
+
+
+  (void)argv;
+  if (argc > 0) {
+    chprintf(chp, "Usage: ls\r\n");
+    return;
+  }
+
+  mod_cardreader_ls(chp);
+
+}
+
 
 static const ShellCommand commands[] = {
     {"mem", cmd_mem},
     {"threads", cmd_threads},
-    {"mount", cmd_mount},
-    {"umount", cmd_unmount},
-    {"tree", cmd_tree},
+    {"ls", cmd_ls},
     {NULL, NULL}
 };
 
@@ -104,6 +146,7 @@ static const ShellConfig shell_cfg1 = {
   (BaseSequentialStream *)&SDU1,
   commands
 };
+
 
 /*
  * Application entry point.
@@ -129,16 +172,30 @@ int main(void)
      */
     shellInit();
 
+
+
     BoardDriverInit();
 
     BoardDriverStart();
 
     /*init modules*/
     mod_cardreader_init(&cardReaderCfg);
+    mod_rfid_init(&rfidCfg);
 
 
     /*start modules*/
     mod_cardreader_start();
+    mod_rfid_start();
+
+    /*
+     * Activates the USB driver and then the USB bus pull-up on D+.
+     * Note, a delay is inserted in order to not have to disconnect the cable
+     * after a reset.
+     */
+    usbDisconnectBus(serusbcfg.usbp);
+    chThdSleepMilliseconds(1000);
+    usbStart(serusbcfg.usbp, &usbcfg);
+    usbConnectBus(serusbcfg.usbp);
 
     /*
      * Normal main() thread activity, in this demo it just performs
