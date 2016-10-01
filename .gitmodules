@@ -1,3 +1,6 @@
 [submodule "submodules/ChibiOS"]
 	path = submodules/ChibiOS
 	url = git@github.com:ChibiOS/ChibiOS.git
+[submodule "submodules/mfrc522"]
+	path = submodules/mfrc522
+	url = git@github.com:janfietz/mfrc522.git
