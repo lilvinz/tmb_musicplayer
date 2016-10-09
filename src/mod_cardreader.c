@@ -33,6 +33,7 @@ static FATFS SDC_FS;
 
 /* Generic large buffer.*/
 static char fbuff[1024];
+static char fnameBuff[512];
 
 static char* fresult_str(FRESULT stat)
 {
@@ -100,10 +101,10 @@ static FRESULT listFiles(BaseSequentialStream *chp, char *path) {
     int i;
     char *fn;
 
-#if _USE_LFN
-    fno.lfname = 0;
-    fno.lfsize = 0;
-#endif
+
+    fno.lfname = fnameBuff;
+    fno.lfsize = sizeof(fnameBuff);
+
     /*
      * Open the Directory.
      */
@@ -121,16 +122,22 @@ static FRESULT listFiles(BaseSequentialStream *chp, char *path) {
             /*
              * If the directory read failed or the
              */
-            if (res != FR_OK || fno.fname[0] == 0) {
+            if (res != FR_OK || (fno.lfname[0] == 0 && fno.fname[0] == 0)) {
                 break;
+            }
+
+            fn = fno.lfname;
+            if (fno.lfname[0] == 0)
+            {
+                fn = fno.fname;
             }
             /*
              * If the directory or file begins with a '.' (hidden), continue
              */
-            if (fno.fname[0] == '.') {
+            if (fn[0] == '.') {
                 continue;
             }
-            fn = fno.fname;
+
             /*
              * Extract the date.
              */
@@ -163,10 +170,10 @@ static FRESULT listFiles(BaseSequentialStream *chp, char *path) {
                 /*
                  * Recursive call to scan the files.
                  */
-                res = listFiles(chp, path);
-                if (res != FR_OK) {
-                    break;
-                }
+//                res = listFiles(chp, path);
+//                if (res != FR_OK) {
+//                    break;
+//                }
                 path[--i] = 0;
             } else {
                 /*
@@ -311,14 +318,42 @@ void mod_cardreader_stop(void)
     }
 }
 
-void mod_cardreader_ls(BaseSequentialStream *chp)
+void mod_cardreader_ls(BaseSequentialStream *chp, char* path)
 {
     /*
      * Set the file path buffer to 0
      */
-
     memset(fbuff,0,sizeof(fbuff));
+
+    if (path != 0)
+    {
+        strcpy(fbuff, path);
+    }
+
+
     listFiles(chp, fbuff);
+}
+
+bool mod_cardreader_cd(const char* path)
+{
+    DIR dir;
+    FRESULT res = f_opendir(&dir, path);
+    if (res == FR_OK)
+    {
+        return true;
+
+    }
+    return false;
+}
+
+bool mod_cardreader_find(DIR* dp, FILINFO* fno, const char* path, const char* pattern)
+{
+    FRESULT res = f_findfirst(dp, fno, path, pattern);
+    if (res == FR_OK)
+    {
+        return true;
+    }
+    return false;
 }
 
 /** @} */

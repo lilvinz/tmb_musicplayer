@@ -21,7 +21,7 @@
 /* Module pre-compile time settings.                                         */
 /*===========================================================================*/
 #ifndef MOD_RFID_THREADSIZE
-#define MOD_RFID_THREADSIZE 512
+#define MOD_RFID_THREADSIZE 256
 #endif
 
 #ifndef MOD_RFID_THREADPRIO

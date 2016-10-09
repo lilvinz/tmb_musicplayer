@@ -29,6 +29,7 @@
 #include "mod_cardreader.h"
 #include "mod_rfid.h"
 #include "mfrc522.h"
+#include "vs1053.h"
 
 #include <stdlib.h>
 
@@ -37,6 +38,12 @@ ModLED LED_ORANGE;
 ModLED LED_GREEN;
 ModLED LED_BLUE;
 ModLED LED_RED;
+
+/* Generic large buffer.*/
+static char fbuff[128];
+static FIL fsrc;
+static THD_WORKING_AREA(waFileDataPump, 512);
+static bool startTransfer;
 
 static CardReaderConfig cardReaderCfg =
 {
@@ -50,6 +57,7 @@ static CardReaderConfig cardReaderCfg =
 };
 
 MFRC522Driver RFID1;
+VS1053Driver VS1053D1;
 
 static RFIDConfig rfidCfg =
 {
@@ -123,15 +131,117 @@ static void cmd_threads(BaseSequentialStream *chp, int argc, char *argv[]) {
 
 static void cmd_ls(BaseSequentialStream *chp, int argc, char *argv[]) {
 
-
-  (void)argv;
-  if (argc > 0) {
-    chprintf(chp, "Usage: ls\r\n");
+  char* path = 0;
+  if (argc > 1) {
+    chprintf(chp, "Usage: ls <path>\r\n");
     return;
   }
 
-  mod_cardreader_ls(chp);
+  if (argc == 1)
+  {
+      path = argv[0];
+  }
 
+  mod_cardreader_ls(chp, path);
+
+}
+
+static void cmd_cd(BaseSequentialStream *chp, int argc, char *argv[]) {
+
+  if (argc != 1) {
+    chprintf(chp, "Usage: cd <path>\r\n");
+    return;
+  }
+
+  if (mod_cardreader_cd(argv[0]))
+  {
+      chprintf(chp, "changed to dir %s\r\n", argv[0]);
+  }
+
+}
+
+static void cmd_find(BaseSequentialStream *chp, int argc, char *argv[]) {
+
+  if (argc != 2) {
+    chprintf(chp, "Usage: find <path>\r\n");
+    return;
+  }
+
+  char lfNamebuffer[128];
+
+  DIR dp;
+  FILINFO fno;
+  fno.lfname = lfNamebuffer;
+  fno.lfsize = sizeof(lfNamebuffer);
+
+  if (mod_cardreader_find(&dp, &fno, argv[0], argv[1]) && fno.fname[0])
+  {
+      if (fno.fattrib & AM_DIR)
+      {
+          if (fno.fattrib & AM_LFN)
+          {
+              chprintf(chp, "found dir %s\r\n", fno.fname);
+          }
+          else
+          {
+              chprintf(chp, "found dir %s\r\n", fno.lfname);
+          }
+      }
+      else
+      {
+          if (fno.fattrib & AM_LFN)
+          {
+              chprintf(chp, "found file %s\r\n", fno.fname);
+          }
+          else
+          {
+              chprintf(chp, "found file %s\r\n", fno.lfname);
+          }
+      }
+
+      f_closedir(&dp);
+  }
+  else
+      chprintf(chp, "%s not found\r\n", argv[1]);
+
+}
+
+static void cmd_play(BaseSequentialStream *chp, int argc, char *argv[]) {
+
+  if (argc != 1) {
+    chprintf(chp, "Usage: play <path>\r\n");
+    return;
+  }
+
+  strcpy(fbuff, argv[0]);
+
+  startTransfer = true;
+
+}
+
+static void cmd_sine(BaseSequentialStream *chp, int argc, char *argv[])
+{
+  (void)argv;
+  if (argc != 1) {
+    chprintf(chp, "Usage: sine <freq>\r\n");
+    return;
+  }
+
+  uint16_t freq = (uint16_t)atoi(argv[0]);
+  VS1053SineTest(&VS1053D1, freq, 0x24, 0x24);
+}
+
+static void cmd_vol(BaseSequentialStream *chp, int argc, char *argv[])
+{
+  (void)argv;
+  if (argc != 2) {
+    chprintf(chp, "Usage: vol <left> <right>\r\n");
+    return;
+  }
+
+  uint8_t left = (uint8_t)atoi(argv[0]);
+  uint8_t right = (uint8_t)atoi(argv[1]);
+  VS1053SetVolume(&VS1053D1, left, right);
 }
 
 
@@ -139,6 +249,11 @@ static const ShellCommand commands[] = {
     {"mem", cmd_mem},
     {"threads", cmd_threads},
     {"ls", cmd_ls},
+    {"cd", cmd_cd},
+    {"find", cmd_find},
+    {"play", cmd_play},
+    {"sine", cmd_sine},
+    {"vol", cmd_vol},
     {NULL, NULL}
 };
 
@@ -146,6 +261,62 @@ static const ShellConfig shell_cfg1 = {
   (BaseSequentialStream *)&SDU1,
   commands
 };
+
+static THD_FUNCTION(dataPump, arg)
+{
+  (void)arg;
+  chRegSetThreadName("dataPump");
+
+  char Buffer[32];
+  UINT ByteToRead = sizeof(Buffer);
+  UINT ByteRead;
+
+
+
+  while (!chThdShouldTerminateX())
+  {
+      if (startTransfer == true)
+      {
+            FRESULT err = f_open(&fsrc, fbuff, FA_READ);
+            if (err == FR_OK)
+            {
+                //startTransfer = false;
+
+                /*
+                 * Do while the number of bytes read is equal to the number of bytes to read
+                 * (the buffer is filled)
+                 */
+                do {
+                    /*
+                     * Clear the buffer.
+                     */
+                    memset(Buffer,0,sizeof(Buffer));
+                    /*
+                     * Read the file.
+                     */
+                    mod_led_on(&LED_BLUE);
+                    err = f_read(&fsrc, Buffer, ByteToRead, &ByteRead);
+                    mod_led_off(&LED_BLUE);
+                    if (err == FR_OK)
+                    {
+                        mod_led_on(&LED_RED);
+                        if (VS1053SendData(&VS1053D1, Buffer, ByteRead) != ByteRead)
+                        {
+                            ByteRead = 0;
+                        }
+                        mod_led_off(&LED_RED);
+                    }
+                } while (ByteRead >= ByteToRead);
+                f_close(&fsrc);
+
+                VS1053StopPlaying(&VS1053D1);
+
+            }
+
+      }
+      chThdSleep(MS2ST(100));
+  }
+}
 
 
 /*
@@ -187,6 +358,8 @@ int main(void)
     mod_cardreader_start();
     mod_rfid_start();
 
+    chThdCreateStatic(waFileDataPump, sizeof(waFileDataPump), NORMALPRIO, dataPump, NULL);
+
     /*
      * Activates the USB driver and then the USB bus pull-up on D+.
      * Note, a delay is inserted in order to not have to disconnect the cable
@@ -196,6 +369,14 @@ int main(void)
     chThdSleepMilliseconds(1000);
     usbStart(serusbcfg.usbp, &usbcfg);
     usbConnectBus(serusbcfg.usbp);
+
+    //VS1053SineTest(&VS1053D1, 1024, 0x24, 0x24);
+
+    /*play file from start*/
+    char* test = "/music/rock_pop/Thriller.mp3";
+    strcpy(fbuff, test);
+    startTransfer = true;
+
 
     /*
      * Normal main() thread activity, in this demo it just performs

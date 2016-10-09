@@ -125,6 +125,7 @@ CSRC = $(STARTUPSRC) \
        $(CHIBIOS)/os/hal/lib/streams/chprintf.c \
        $(FATFSSRC) \
        ${MFRC522}/mfrc522.c \
+       $(PRJ_SRC)/vs1053.c \
        $(PRJ_SRC)/usbcfg.c \
        $(PRJ_SRC)/mod_led.c \
        $(PRJ_SRC)/mod_cardreader.c \

@@ -12,11 +12,13 @@
 
 #include "usbcfg.h"
 #include "mfrc522.h"
+#include "vs1053.h"
 #include "mod_led.h"
 
 extern SerialUSBDriver SDU1;
 extern SDCDriver SDCD1;
 extern MFRC522Driver RFID1;
+extern VS1053Driver VS1053D1;
 
 extern ModLED LED_ORANGE;
 extern ModLED LED_GREEN;
@@ -54,6 +56,33 @@ static const SPIConfig SPI1cfg = {
   SPI_CR1_BR_0 | SPI_CR1_BR_1
 };
 
+static const SPIConfig SPI2cfg = {
+  NULL,
+  /* HW dependent part.*/
+  GPIOD,
+  12U,
+  SPI_CR1_BR_0 | SPI_CR1_BR_1
+};
+
+
+/*
+ * VSConfiguration
+ */
+
+static VS1053Config VS1053D1_cfg =
+{
+    .spid = &SPID2,
+    .spiCfg = &SPI2cfg,
+    .xResetPort = GPIOD,
+    .xResetPad = 10U,
+    .xCSPort = GPIOD,
+    .xCSPad = 11U,
+    .xDCSPort = GPIOD,
+    .xDCSPad = 8U,
+    .xDREQPort = GPIOD,
+    .xDREQPad = 9U,
+};
+
 /*
  * RFID configuration.
  */
@@ -69,12 +98,15 @@ void BoardDriverInit(void)
     mod_led_init(&LED_RED, &ledCfg3);
     mod_led_init(&LED_BLUE, &ledCfg4);
 
-    /*mmc pin configuratio*/
-//    palSetPadMode(GPIOC, GPIOC_PIN4, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST | PAL_STM32_PUPDR_FLOATING);
-//    palSetPadMode(GPIOC, GPIOC_PIN5, PAL_MODE_INPUT_PULLUP);
-//    palSetPadMode(GPIOB, GPIOB_PIN13, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST );
-//    palSetPadMode(GPIOB, GPIOB_PIN14, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
-//    palSetPadMode(GPIOB, GPIOB_PIN15, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+    /*vs1053 pin configuratio*/
+    palSetPadMode(GPIOB, GPIOB_PIN13, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST );
+    palSetPadMode(GPIOB, GPIOB_PIN14, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+    palSetPadMode(GPIOB, GPIOB_PIN15, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
+    palSetPadMode(GPIOD, 8U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST | PAL_STM32_PUPDR_FLOATING);
+    palSetPadMode(GPIOD, 10U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST | PAL_STM32_PUPDR_FLOATING);
+    palSetPadMode(GPIOD, 11U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST | PAL_STM32_PUPDR_FLOATING);
+    palSetPadMode(GPIOD, 12U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST | PAL_STM32_PUPDR_FLOATING);
+    palSetPadMode(GPIOD, 9U, PAL_MODE_INPUT_PULLUP);
 
     /*SDIO Card detection pin*/
     palSetPadMode(GPIOA, 15U, PAL_MODE_INPUT_PULLUP);
@@ -92,6 +124,7 @@ void BoardDriverInit(void)
     sduObjectInit(&SDU1);
     sdcObjectInit (&SDCD1);
     MFRC522ObjectInit(&RFID1);
+    VS1053ObjectInit(&VS1053D1);
 }
 
 void BoardDriverStart(void)
@@ -103,13 +136,17 @@ void BoardDriverStart(void)
     sduStart(&SDU1, &serusbcfg);
 
     spiStart(&SPID1, &SPI1cfg);
+
     MFRC522Start(&RFID1, &RFID1_cfg);
+    VS1053Start(&VS1053D1, &VS1053D1_cfg);
 }
 
 void BoardDriverShutdown(void)
 {
+    VS1053Stop(&VS1053D1);
     MFRC522Stop(&RFID1);
     spiStop(&SPID1);
+
 
     sduStop(&SDU1);
     sdcStop(&SDCD1);

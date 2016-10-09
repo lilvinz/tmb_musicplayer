@@ -11,6 +11,7 @@
 
 #include "hal.h"
 #include "mod_led.h"
+#include "ff.h"
 
 /*===========================================================================*/
 /* Module constants.                                                         */
@@ -63,7 +64,9 @@ extern "C" {
   bool mod_cardreader_start(void);
   void mod_cardreader_stop(void);
 
-  void mod_cardreader_ls(BaseSequentialStream *chp);
+  void mod_cardreader_ls(BaseSequentialStream *chp, char* path);
+  bool mod_cardreader_cd(const char* path);
+  bool mod_cardreader_find(DIR* dp, FILINFO* fno, const char* path, const char* pattern);
 #ifdef __cplusplus
 }
 #endif
