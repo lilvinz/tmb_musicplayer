@@ -28,6 +28,10 @@
 #include "mod_led.h"
 #include "mod_cardreader.h"
 #include "mod_rfid.h"
+#include "mod_musicplayer.h"
+#include "mod_input.h"
+#include "mod_musicbox.h"
+
 #include "mfrc522.h"
 #include "vs1053.h"
 
@@ -38,12 +42,6 @@ ModLED LED_ORANGE;
 ModLED LED_GREEN;
 ModLED LED_BLUE;
 ModLED LED_RED;
-
-/* Generic large buffer.*/
-static char fbuff[128];
-static FIL fsrc;
-static THD_WORKING_AREA(waFileDataPump, 512);
-static bool startTransfer;
 
 static CardReaderConfig cardReaderCfg =
 {
@@ -61,8 +59,34 @@ VS1053Driver VS1053D1;
 
 static RFIDConfig rfidCfg =
 {
-        .mfrcd = &RFID1,
-        .ledCardDetect = &LED_ORANGE,
+    .mfrcd = &RFID1,
+    .ledCardDetect = &LED_ORANGE,
+};
+
+static MusicPlayerConfig playerCfg =
+{
+    .codecp = &VS1053D1,
+    .ledReadData = &LED_RED,
+    .ledSendData = &LED_BLUE,
+};
+
+static Button buttons[] =
+{
+        /*play*/
+        {
+            .cfg = {.port = GPIOE, .pad = 3},
+        }
+};
+
+static ModInputConfig modInputCfg =
+{
+        .pButtons = buttons,
+        .buttonCount = 1,
+};
+
+static MusicBoxConfig modMusicbocCfg =
+{
+
 };
 
 static uint8_t txbuf[2];
@@ -206,16 +230,14 @@ static void cmd_find(BaseSequentialStream *chp, int argc, char *argv[]) {
 
 }
 
-static void cmd_play(BaseSequentialStream *chp, int argc, char *argv[]) {
-
+static void cmd_play(BaseSequentialStream *chp, int argc, char *argv[])
+{
+   (void) argv;
   if (argc != 1) {
     chprintf(chp, "Usage: play <path>\r\n");
     return;
   }
 
-  strcpy(fbuff, argv[0]);
-
-  startTransfer = true;
 
 }
 
@@ -262,63 +284,6 @@ static const ShellConfig shell_cfg1 = {
   commands
 };
 
-static THD_FUNCTION(dataPump, arg)
-{
-  (void)arg;
-  chRegSetThreadName("dataPump");
-
-  char Buffer[32];
-  UINT ByteToRead = sizeof(Buffer);
-  UINT ByteRead;
-
-
-
-  while (!chThdShouldTerminateX())
-  {
-      if (startTransfer == true)
-      {
-            FRESULT err = f_open(&fsrc, fbuff, FA_READ);
-            if (err == FR_OK)
-            {
-                //startTransfer = false;
-
-                /*
-                 * Do while the number of bytes read is equal to the number of bytes to read
-                 * (the buffer is filled)
-                 */
-                do {
-                    /*
-                     * Clear the buffer.
-                     */
-                    memset(Buffer,0,sizeof(Buffer));
-                    /*
-                     * Read the file.
-                     */
-                    mod_led_on(&LED_BLUE);
-                    err = f_read(&fsrc, Buffer, ByteToRead, &ByteRead);
-                    mod_led_off(&LED_BLUE);
-                    if (err == FR_OK)
-                    {
-                        mod_led_on(&LED_RED);
-                        if (VS1053SendData(&VS1053D1, Buffer, ByteRead) != ByteRead)
-                        {
-                            ByteRead = 0;
-                        }
-                        mod_led_off(&LED_RED);
-                    }
-                } while (ByteRead >= ByteToRead);
-                f_close(&fsrc);
-
-                VS1053StopPlaying(&VS1053D1);
-
-            }
-
-      }
-      chThdSleep(MS2ST(100));
-  }
-}
-
-
 /*
  * Application entry point.
  */
@@ -350,15 +315,19 @@ int main(void)
     BoardDriverStart();
 
     /*init modules*/
+    mod_input_init(&modInputCfg);
+    mod_musicplayer_init(&playerCfg);
     mod_cardreader_init(&cardReaderCfg);
     mod_rfid_init(&rfidCfg);
+    mod_musicbox_init(&modMusicbocCfg);
 
 
     /*start modules*/
     mod_cardreader_start();
     mod_rfid_start();
-
-    chThdCreateStatic(waFileDataPump, sizeof(waFileDataPump), NORMALPRIO, dataPump, NULL);
+    mod_musicplayer_start();
+    mod_input_start();
+    mod_musicbox_start();
 
     /*
      * Activates the USB driver and then the USB bus pull-up on D+.
@@ -370,12 +339,9 @@ int main(void)
     usbStart(serusbcfg.usbp, &usbcfg);
     usbConnectBus(serusbcfg.usbp);
 
-    //VS1053SineTest(&VS1053D1, 1024, 0x24, 0x24);
 
     /*play file from start*/
-    char* test = "/music/rock_pop/Thriller.mp3";
-    strcpy(fbuff, test);
-    startTransfer = true;
+    mod_musicplayer_cmdPlay("/music/rock_pop");
 
 
     /*

@@ -1,33 +1,29 @@
 /**
- * @file    src/mod_rfid.h
+ * @file    src/mod_musicbox.h
  * @brief
  *
  * @addtogroup
  * @{
  */
 
-#ifndef _MOD_RFID_H_
-#define _MOD_RFID_H_
+#ifndef _MOD_MUSICBOX_H_
+#define _MOD_MUSICPLAYER_H_
 
 #include "hal.h"
-#include "mod_led.h"
-#include "mfrc522.h"
 
 /*===========================================================================*/
 /* Module constants.                                                         */
 /*===========================================================================*/
-#define RFID_DETECTED 1
-#define RFID_LOST 2
 
 /*===========================================================================*/
 /* Module pre-compile time settings.                                         */
 /*===========================================================================*/
-#ifndef MOD_RFID_THREADSIZE
-#define MOD_RFID_THREADSIZE 256
+#ifndef MOD_MUSICBOX_THREADSIZE
+#define MOD_MUSICBOX_THREADSIZE 512
 #endif
 
-#ifndef MOD_RFID_THREADPRIO
-#define MOD_RFID_THREADPRIO LOWPRIO
+#ifndef MOD_MUSICBOX_THREADPRIO
+#define MOD_MUSICBOX_THREADPRIO LOWPRIO
 #endif
 
 /*===========================================================================*/
@@ -39,12 +35,10 @@
 /*===========================================================================*/
 
 /**
- * @brief   RFID descriptor type.
+ * @brief   Cardreader descriptor type.
  */
 typedef struct {
-    MFRC522Driver* mfrcd;
-    ModLED* ledCardDetect;
-} RFIDConfig;
+} MusicBoxConfig;
 
 /*===========================================================================*/
 /* Module macros.                                                            */
@@ -57,15 +51,13 @@ typedef struct {
 #ifdef __cplusplus
 extern "C" {
 #endif
-  void mod_rfid_init(RFIDConfig* cfgp);
-  bool mod_rfid_start(void);
-  void mod_rfid_stop(void);
-  event_source_t* mod_rfid_eventscource(void);
-  bool mod_rfid_cardid(struct MifareUID* id);
+  void mod_musicbox_init(MusicBoxConfig* cfgp);
+  bool mod_musicbox_start(void);
+  void mod_musicbox_stop(void);
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _MOD_RFID_H_ */
+#endif /* _MOD_MUSICPLAYER_H_ */
 
 /** @} */

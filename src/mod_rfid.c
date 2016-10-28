@@ -23,6 +23,7 @@ typedef struct {
     thread_t* threadp;
     bool detectedCard;
     struct MifareUID cardID;
+    event_source_t eventSource;
 } ModRFIDData;
 
 static MUTEX_DECL(CardIDMutex);
@@ -51,6 +52,7 @@ static THD_FUNCTION(rfidReader, arg)
             {
                 mod_led_on(datap->cfgp->ledCardDetect);
                 datap->detectedCard = true;
+                chEvtBroadcastFlags(&datap->eventSource, RFID_DETECTED);
             }
         }
         else
@@ -60,6 +62,7 @@ static THD_FUNCTION(rfidReader, arg)
               mod_led_off(datap->cfgp->ledCardDetect);
               datap->cardID.size = 0;
               datap->detectedCard = false;
+              chEvtBroadcastFlags(&datap->eventSource, RFID_LOST);
           }
         }
         chMtxUnlock(&CardIDMutex);
@@ -72,6 +75,7 @@ void mod_rfid_init(RFIDConfig* cfgp)
 {
     modRFIDData.cfgp = cfgp;
     modRFIDData.detectedCard = false;
+    chEvtObjectInit(&modRFIDData.eventSource);
 }
 
 bool mod_rfid_start(void)
@@ -92,6 +96,21 @@ void mod_rfid_stop(void)
         chThdTerminate(modRFIDData.threadp);
         modRFIDData.threadp = NULL;
     }
+}
+
+event_source_t* mod_rfid_eventscource(void)
+{
+    return &modRFIDData.eventSource;
+}
+
+bool mod_rfid_cardid(struct MifareUID* id)
+{
+    if (modRFIDData.detectedCard)
+    {
+        memcpy(id, &modRFIDData.cardID, sizeof(modRFIDData.cardID));
+        return true;
+    }
+    return false;
 }
 
 /** @} */

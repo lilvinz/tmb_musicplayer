@@ -154,6 +154,7 @@ static void SetVolume(VS1053Driver* VS1053p, uint8_t left, uint8_t right)
 {
     WriteRegister(VS1053p, SCI_VOL, left,  right);
 }
+
 static bool InitChip(VS1053Driver* VS1053p)
 {
     /*Set clock frequency*/
@@ -162,7 +163,7 @@ static bool InitChip(VS1053Driver* VS1053p)
     /*Set mode*/
     SoftReset(VS1053p);
 
-    SetVolume(VS1053p, 0x7F, 0x7F);
+    SetVolume(VS1053p, 50, 50);
 
 
     return true;
@@ -285,6 +286,9 @@ void VS1053SineTest(VS1053Driver* VS1053p, uint16_t freq, uint8_t leftVol, uint8
     WriteRegister(VS1053p, SCI_AIADDR, 0x40, 0x20);
 }
 
+/*
+ * Volume Control. 0 = Max, 254 is Silence, 255 Analog Power Down
+ */
 void VS1053SetVolume(VS1053Driver* VS1053p, uint8_t leftVol, uint8_t rightVol)
 {
     osalDbgCheck(VS1053p != NULL);
@@ -293,9 +297,8 @@ void VS1053SetVolume(VS1053Driver* VS1053p, uint8_t leftVol, uint8_t rightVol)
     osalDbgAssert(VS1053p->state == VS1053_ACTIVE, "invalid state");
     osalSysUnlock();
 
-
     /*Set volume*/
-    WriteRegister(VS1053p, SCI_VOL, leftVol, rightVol);
+    SetVolume(VS1053p, leftVol, rightVol);
 }
 
 uint8_t VS1053SendData(VS1053Driver* VS1053p, const char* data, uint8_t bytes)

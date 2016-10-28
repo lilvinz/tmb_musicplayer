@@ -1,33 +1,32 @@
 /**
- * @file    src/mod_rfid.h
+ * @file    src/mod_input.h
  * @brief
  *
  * @addtogroup
  * @{
  */
 
-#ifndef _MOD_RFID_H_
-#define _MOD_RFID_H_
+#ifndef _MOD_INPUT_H_
+#define _MOD_INPUT_H_
 
 #include "hal.h"
-#include "mod_led.h"
-#include "mfrc522.h"
 
 /*===========================================================================*/
 /* Module constants.                                                         */
 /*===========================================================================*/
-#define RFID_DETECTED 1
-#define RFID_LOST 2
+#define BUTTON_DOWN 1
+#define BUTTON_UP 2
+#define BUTTON_PRESSED 4
 
 /*===========================================================================*/
 /* Module pre-compile time settings.                                         */
 /*===========================================================================*/
-#ifndef MOD_RFID_THREADSIZE
-#define MOD_RFID_THREADSIZE 256
+#ifndef MOD_INPUT_THREADSIZE
+#define MOD_INPUT_THREADSIZE 128
 #endif
 
-#ifndef MOD_RFID_THREADPRIO
-#define MOD_RFID_THREADPRIO LOWPRIO
+#ifndef MOD_INPUT_THREADPRIO
+#define MOD_INPUT_THREADPRIO LOWPRIO
 #endif
 
 /*===========================================================================*/
@@ -38,13 +37,30 @@
 /* Module data structures and types.                                         */
 /*===========================================================================*/
 
+typedef struct {
+    ioportid_t port;
+    uint8_t pad;
+} ButtonConfig;
+
+typedef struct {
+    ButtonConfig cfg;
+    event_source_t eventSource;
+    bool lastState;
+    bool state;
+    systime_t lastDebounceTime;
+    systime_t lastDownTime;
+} Button;
+
+
 /**
- * @brief   RFID descriptor type.
+ * @brief
  */
 typedef struct {
-    MFRC522Driver* mfrcd;
-    ModLED* ledCardDetect;
-} RFIDConfig;
+    Button* pButtons;
+    uint32_t buttonCount;
+} ModInputConfig;
+
+
 
 /*===========================================================================*/
 /* Module macros.                                                            */
@@ -57,15 +73,13 @@ typedef struct {
 #ifdef __cplusplus
 extern "C" {
 #endif
-  void mod_rfid_init(RFIDConfig* cfgp);
-  bool mod_rfid_start(void);
-  void mod_rfid_stop(void);
-  event_source_t* mod_rfid_eventscource(void);
-  bool mod_rfid_cardid(struct MifareUID* id);
+  void mod_input_init(ModInputConfig* config);
+  bool mod_input_start(void);
+  void mod_input_shutdown(void);
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _MOD_RFID_H_ */
+#endif /* _MOD_LED_H_ */
 
 /** @} */

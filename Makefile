@@ -130,6 +130,9 @@ CSRC = $(STARTUPSRC) \
        $(PRJ_SRC)/mod_led.c \
        $(PRJ_SRC)/mod_cardreader.c \
        $(PRJ_SRC)/mod_rfid.c \
+       $(PRJ_SRC)/mod_musicplayer.c \
+       $(PRJ_SRC)/mod_input.c \
+       $(PRJ_SRC)/mod_musicbox.c \
        board_drivers.c \
        main.c
 

@@ -1,33 +1,35 @@
 /**
- * @file    src/mod_rfid.h
+ * @file    src/mod_musicplayer.h
  * @brief
  *
  * @addtogroup
  * @{
  */
 
-#ifndef _MOD_RFID_H_
-#define _MOD_RFID_H_
+#ifndef _MOD_MUSICPLAYER_H_
+#define _MOD_MUSICPLAYER_H_
 
 #include "hal.h"
 #include "mod_led.h"
-#include "mfrc522.h"
+#include "vs1053.h"
 
 /*===========================================================================*/
 /* Module constants.                                                         */
 /*===========================================================================*/
-#define RFID_DETECTED 1
-#define RFID_LOST 2
 
 /*===========================================================================*/
 /* Module pre-compile time settings.                                         */
 /*===========================================================================*/
-#ifndef MOD_RFID_THREADSIZE
-#define MOD_RFID_THREADSIZE 256
+#ifndef MOD_MUSICPLAYER_DATAPUMP_THREADSIZE
+#define MOD_MUSICPLAYER_DATAPUMP_THREADSIZE 1028
 #endif
 
-#ifndef MOD_RFID_THREADPRIO
-#define MOD_RFID_THREADPRIO LOWPRIO
+#ifndef MOD_MUSICPLAYER_DATAPUMP_THREADPRIO
+#define MOD_MUSICPLAYER_DATAPUMP_THREADPRIO NORMALPRIO
+#endif
+
+#ifndef MOD_MUSICPLAYER_CMD_QUEUE_SIZE
+#define MOD_MUSICPLAYER_CMD_QUEUE_SIZE 2
 #endif
 
 /*===========================================================================*/
@@ -39,12 +41,13 @@
 /*===========================================================================*/
 
 /**
- * @brief   RFID descriptor type.
+ * @brief   Cardreader descriptor type.
  */
 typedef struct {
-    MFRC522Driver* mfrcd;
-    ModLED* ledCardDetect;
-} RFIDConfig;
+    VS1053Driver* codecp;
+    ModLED* ledReadData;
+    ModLED* ledSendData;
+} MusicPlayerConfig;
 
 /*===========================================================================*/
 /* Module macros.                                                            */
@@ -57,15 +60,17 @@ typedef struct {
 #ifdef __cplusplus
 extern "C" {
 #endif
-  void mod_rfid_init(RFIDConfig* cfgp);
-  bool mod_rfid_start(void);
-  void mod_rfid_stop(void);
-  event_source_t* mod_rfid_eventscource(void);
-  bool mod_rfid_cardid(struct MifareUID* id);
+  void mod_musicplayer_init(MusicPlayerConfig* cfgp);
+  bool mod_musicplayer_start(void);
+  void mod_musicplayer_stop(void);
+
+  void mod_musicplayer_cmdPlay(const char* path);
+  void mod_musicplayer_cmdStop(void);
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _MOD_RFID_H_ */
+#endif /* _MOD_MUSICPLAYER_H_ */
 
 /** @} */

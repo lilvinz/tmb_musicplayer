@@ -121,6 +121,13 @@ void BoardDriverInit(void)
     /*mfrc522 cs pins*/
     palSetPadMode(GPIOC, GPIOC_PIN4, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST | PAL_STM32_PUPDR_FLOATING);
 
+    /*buttons*/
+    palSetPadMode(GPIOE, 5U, PAL_MODE_INPUT_PULLUP);
+    palSetPadMode(GPIOE, 4U, PAL_MODE_INPUT_PULLUP);
+    palSetPadMode(GPIOE, 3U, PAL_MODE_INPUT_PULLUP);
+    palSetPadMode(GPIOE, 2U, PAL_MODE_INPUT_PULLUP);
+    palSetPadMode(GPIOE, 1U, PAL_MODE_INPUT_PULLUP);
+
     sduObjectInit(&SDU1);
     sdcObjectInit (&SDCD1);
     MFRC522ObjectInit(&RFID1);
