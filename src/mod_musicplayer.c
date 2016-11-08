@@ -57,76 +57,96 @@ typedef struct {
     char fileNameBuff[512];
 
     char currentPath[512];
-    DIR openDirectory;
+    uint16_t currentFileInDirectory;
+    uint8_t state;
+
+    mutex_t mtxCodec;
 } ModMusicPlayerData;
 
 static ModMusicPlayerData modMusicPlayerData;
-static THD_WORKING_AREA(waMusicplayerThread, 512);
+static THD_WORKING_AREA(waMusicplayerThread, MOD_MUSICPLAYER_THREADSIZE);
 static THD_WORKING_AREA(waMusicplayerDatapumpThread, MOD_MUSICPLAYER_DATAPUMP_THREADSIZE);
 
 /* Generic large buffer.*/
 static char fnameBuff[512];
 
-static void PlayNextFileFromDirectory(ModMusicPlayerData* datap)
+static bool FindFileWithID(ModMusicPlayerData* datap, uint16_t* startId)
 {
     FILINFO fno;
+    DIR dir;
+
     fno.lfname = fnameBuff;
     fno.lfsize = sizeof(fnameBuff);
 
     char *fn;
-    int i = strlen(datap->currentPath);
-    while (true)
-    {
-        FRESULT res = f_readdir(&datap->openDirectory, &fno);
-        /*
-         * If the directory read failed or the
-         */
-        if (res != FR_OK || (fno.lfname[0] == 0 && fno.fname[0] == 0))
-        {
-            f_closedir(&datap->openDirectory);
-            memset(datap->currentPath, 0, sizeof(datap->currentPath));
-            break;
-        }
-
-        fn = fno.lfname;
-        if (fno.lfname[0] == 0)
-        {
-            fn = fno.fname;
-        }
-        /*
-         * If the directory or file begins with a '.' (hidden), continue
-         */
-        if (fn[0] == '.') {
-            continue;
-        }
-        /*
-         * If the 'file' is a directory.
-         */
-        if (fno.fattrib & AM_DIR)
-        {
-            // skip directories for now
-        }
-        else
-        {
-            memset(datap->fileNameBuff, 0, sizeof(datap->fileNameBuff));
-            strcpy(datap->fileNameBuff, datap->currentPath);
-            datap->fileNameBuff[i++] = '/';
-            strcpy(&datap->fileNameBuff[i], fn);
-            datap->transferFile = true;
-            break;
-        }
-    }
-
-}
-
-static void HandlePlayCommand(ModMusicPlayerData* datap)
-{
-    /*try to open a directory*/
-    FRESULT res = f_opendir(&datap->openDirectory, datap->currentPath);
+    int i = strlen(datap->fileNameBuff);
+    uint16_t fileId = *startId;
+    FRESULT res = f_opendir(&dir, datap->fileNameBuff);
     if (res == FR_OK)
     {
-        PlayNextFileFromDirectory(datap);
+        while (true)
+        {
+            FRESULT res = f_readdir(&dir, &fno);
+            /*
+             * If the directory read failed or the
+             */
+            if (res != FR_OK || (fno.lfname[0] == 0 && fno.fname[0] == 0))
+            {
+                f_closedir(&dir);
+                *startId = fileId;
+                return false;
+            }
+
+            fn = fno.lfname;
+            if (fno.lfname[0] == 0)
+            {
+                fn = fno.fname;
+            }
+            /*
+             * If the directory or file begins with a '.' (hidden), continue
+             */
+            if (fn[0] == '.') {
+                continue;
+            }
+            /*
+             * If the 'file' is a directory.
+             */
+            if (fno.fattrib & AM_DIR)
+            {
+                *startId = fileId;
+                datap->fileNameBuff[i++] = '/';
+                strcpy(&datap->fileNameBuff[i], fn);
+                if (FindFileWithID(datap, startId) == true)
+                {
+                    f_closedir(&dir);
+                    fileId = *startId;
+                    return true;
+                }
+                fileId = *startId;
+            }
+            else
+            {
+                if (fileId == datap->currentFileInDirectory)
+                {
+                    datap->fileNameBuff[i++] = '/';
+                    strcpy(&datap->fileNameBuff[i], fn);
+                    f_closedir(&dir);
+                    *startId = fileId;
+                    return true;
+                }
+                fileId = fileId + 1;
+            }
+        }
     }
+    *startId = fileId;
+    return false;
+}
+
+static bool LoadCurrentFilename(ModMusicPlayerData* datap)
+{
+    uint16_t startId = 0;
+    strcpy(datap->fileNameBuff, datap->currentPath);
+    return FindFileWithID(datap, &startId);
 }
 /*
  *
@@ -137,8 +157,6 @@ static THD_FUNCTION(dataPump, arg)
   chRegSetThreadName("dataPump");
 
   ModMusicPlayerData* datap = &modMusicPlayerData;
-
-
 
   char Buffer[32];
   UINT ByteToRead = sizeof(Buffer);
@@ -173,15 +191,13 @@ static THD_FUNCTION(dataPump, arg)
                   if (err == FR_OK)
                   {
                       mod_led_on(datap->cfgp->ledSendData);
+                      chMtxLock(&modMusicPlayerData.mtxCodec);
                       if (VS1053SendData(datap->cfgp->codecp, Buffer, ByteRead) != ByteRead)
                       {
                           ByteRead = 0;
                       }
+                      chMtxUnlock(&modMusicPlayerData.mtxCodec);
                       mod_led_off(datap->cfgp->ledSendData);
-                  }
-                  else
-                  {
-                      break;
                   }
 
                   if (datap->transferFile == false)
@@ -192,10 +208,15 @@ static THD_FUNCTION(dataPump, arg)
 
               f_close(&fsrc);
 
+              chMtxLock(&modMusicPlayerData.mtxCodec);
               VS1053StopPlaying(datap->cfgp->codecp);
+              chMtxUnlock(&modMusicPlayerData.mtxCodec);
 
-              datap->transferFile = false;
-              chEvtSignal(datap->playerThread, EVENTMASK_PUMPTHREAD_STOP);
+              if (err == FR_OK)
+              {
+                  datap->transferFile = false;
+                  chEvtSignal(datap->playerThread, EVENTMASK_PUMPTHREAD_STOP);
+              }
           }
       }
       chThdSleep(MS2ST(100));
@@ -220,7 +241,34 @@ static THD_FUNCTION(musicplayer, arg)
       eventmask_t evt = chEvtWaitAny(ALL_EVENTS);
       if (evt & EVENTMASK_PUMPTHREAD_STOP)
       {
-          PlayNextFileFromDirectory(datap);
+          bool startPlaying = false;
+          if (datap->state == 1 || datap->state == 3)
+          {
+              datap->currentFileInDirectory = datap->currentFileInDirectory + 1;
+              startPlaying = true;
+          }
+          else if (datap->state == 4 && datap->currentFileInDirectory > 0)
+          {
+              datap->currentFileInDirectory = datap->currentFileInDirectory - 1;
+              startPlaying = true;
+          }
+
+          if (startPlaying == true)
+          {
+              if (LoadCurrentFilename(datap) == true)
+              {
+                  datap->state = 1;
+                  datap->transferFile = true;
+              }
+              else
+              {
+                  datap->state = 0;
+              }
+          }
+          else
+          {
+              datap->state = 0;
+          }
       }
       else if (evt & EVENTMASK_COMMANDS)
       {
@@ -229,34 +277,67 @@ static THD_FUNCTION(musicplayer, arg)
           if (flags & PLAY_FILE)
           {
               msg_t p;
-
               /* Processing the event.*/
               while (chMBFetch(&playerCommands, (msg_t*)&p, TIME_IMMEDIATE) == MSG_OK)
               {
                   memset(datap->currentPath, 0, sizeof(datap->currentPath));
-
                   PlayerCmdMsg* pCommandMsg = (PlayerCmdMsg*)p;
                   strcpy(datap->currentPath, pCommandMsg->fileName);
                   chPoolFree(&PlayerCmdMsgPool, pCommandMsg);
 
-                  HandlePlayCommand(datap);
+                  datap->currentFileInDirectory = 0;
+                  if (LoadCurrentFilename(datap) == true)
+                  {
+                      datap->state = 1;
+                      datap->transferFile = true;
+                  }
               }
           }
           if (flags & STOP)
           {
+              datap->state = 0;
               datap->transferFile = false;
           }
           if (flags & PAUSE)
           {
-
+              if (datap->state == 2)
+                {
+                    if (datap->currentPath[0] != 0)
+                    {
+                        datap->state = 1;
+                        datap->transferFile = true;
+                    }
+                }
+              else if (datap->state == 1)
+              {
+                  datap->state = 2;
+                  datap->transferFile = false;
+              }
+              else if (datap->state == 0)
+            {
+                  datap->currentFileInDirectory = 0;
+                if (LoadCurrentFilename(datap) == true)
+                {
+                    datap->state = 1;
+                    datap->transferFile = true;
+                }
+            }
           }
           if (flags & NEXT)
           {
-
+              if (datap->state == 1)
+              {
+                  datap->state = 3;
+                  datap->transferFile = false;
+              }
           }
           if (flags & PREV)
           {
-
+              if (datap->state == 1)
+              {
+                  datap->state = 4;
+                  datap->transferFile = false;
+              }
           }
       }
   }
@@ -266,6 +347,8 @@ static THD_FUNCTION(musicplayer, arg)
 
 void mod_musicplayer_init(MusicPlayerConfig* cfgp)
 {
+    chMtxObjectInit(&modMusicPlayerData.mtxCodec);
+
     modMusicPlayerData.cfgp = cfgp;
 
     chPoolObjectInit(&PlayerCmdMsgPool, sizeof(PlayerCmdMsg), NULL);
@@ -280,10 +363,10 @@ bool mod_musicplayer_start(void)
     if (modMusicPlayerData.playerThread == NULL)
     {
         modMusicPlayerData.playerThread = chThdCreateStatic(waMusicplayerThread, sizeof(waMusicplayerThread),
-                MOD_MUSICPLAYER_DATAPUMP_THREADPRIO, musicplayer, NULL);
+                MOD_MUSICPLAYER_THREADPRIO, musicplayer, NULL);
 
         chThdCreateStatic(waMusicplayerDatapumpThread, sizeof(waMusicplayerDatapumpThread),
-                        MOD_MUSICPLAYER_DATAPUMP_THREADPRIO - 1, dataPump, NULL);
+                        MOD_MUSICPLAYER_DATAPUMP_THREADPRIO, dataPump, NULL);
         return true;
     }
     return false;
@@ -303,26 +386,55 @@ void mod_musicplayer_stop(void)
 
 void mod_musicplayer_cmdPlay(const char* path)
 {
-    PlayerCmdMsg* pCmd = (PlayerCmdMsg*)chPoolAlloc(&PlayerCmdMsgPool);
-    if (pCmd != NULL)
+    if (path == NULL)
     {
-        strcpy(pCmd->fileName, path);
-        if (chMBPost(&playerCommands, (msg_t)pCmd, MS2ST(1)) == MSG_OK)
+        chEvtBroadcastFlags(&modMusicPlayerData.commandEventSource, PLAY_FILE);
+    }
+    else
+    {
+        PlayerCmdMsg* pCmd = (PlayerCmdMsg*)chPoolAlloc(&PlayerCmdMsgPool);
+        if (pCmd != NULL)
         {
-            chEvtBroadcastFlags(&modMusicPlayerData.commandEventSource, PLAY_FILE);
-        }
-        else
-        {
-            chPoolFree(&PlayerCmdMsgPool, pCmd);
+            strcpy(pCmd->fileName, path);
+            if (chMBPost(&playerCommands, (msg_t)pCmd, MS2ST(1)) == MSG_OK)
+            {
+                chEvtBroadcastFlags(&modMusicPlayerData.commandEventSource, PLAY_FILE);
+            }
+            else
+            {
+                chPoolFree(&PlayerCmdMsgPool, pCmd);
+            }
         }
     }
-
-
 }
 
 void mod_musicplayer_cmdStop(void)
 {
     chEvtBroadcastFlags(&modMusicPlayerData.commandEventSource, STOP);
+}
+
+void mod_musicplayer_cmdToggle(void)
+{
+    chEvtBroadcastFlags(&modMusicPlayerData.commandEventSource, PAUSE);
+}
+
+void mod_musicplayer_cmdNext(void)
+{
+    chEvtBroadcastFlags(&modMusicPlayerData.commandEventSource, NEXT);
+
+}
+
+void mod_musicplayer_cmdPrev(void)
+{
+    chEvtBroadcastFlags(&modMusicPlayerData.commandEventSource, PREV);
+
+}
+
+void mod_musicplayer_cmdVolume(uint8_t volume)
+{
+    chMtxLock(&modMusicPlayerData.mtxCodec);
+    VS1053SetVolume(modMusicPlayerData.cfgp->codecp, volume, volume);
+    chMtxUnlock(&modMusicPlayerData.mtxCodec);
 
 }
 
