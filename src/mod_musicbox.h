@@ -10,6 +10,7 @@
 #define _MOD_MUSICPLAYER_H_
 
 #include "hal.h"
+#include "mod_input.h"
 
 /*===========================================================================*/
 /* Module constants.                                                         */
@@ -38,6 +39,11 @@
  * @brief   Cardreader descriptor type.
  */
 typedef struct {
+    Button* btnPlay;
+    Button* btnVolUp;
+    Button* btnVolDown;
+    Button* btnNext;
+    Button* btnPrev;
 } MusicBoxConfig;
 
 /*===========================================================================*/
