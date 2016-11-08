@@ -68,6 +68,7 @@ static THD_FUNCTION(inputThread, arg)
             if (btn->state == false && ((now - btn->lastDownTime) > MS2ST(2000)))
             {
                 chEvtBroadcastFlags(&btn->eventSource, BUTTON_PRESSED);
+                btn->lastDownTime = btn->lastDownTime + MS2ST(200);
             }
 
             btn->lastState = state;
