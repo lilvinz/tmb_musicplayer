@@ -75,18 +75,38 @@ static Button buttons[] =
         /*play*/
         {
             .cfg = {.port = GPIOE, .pad = 3},
+        },
+        /*next*/
+        {
+            .cfg = {.port = GPIOE, .pad = 2},
+        },
+        /*prev*/
+        {
+            .cfg = {.port = GPIOE, .pad = 4},
+        },
+        /*volup*/
+        {
+            .cfg = {.port = GPIOE, .pad = 1},
+        },
+        /*voldown*/
+        {
+            .cfg = {.port = GPIOE, .pad = 5},
         }
 };
 
 static ModInputConfig modInputCfg =
 {
         .pButtons = buttons,
-        .buttonCount = 1,
+        .buttonCount = 5,
 };
 
 static MusicBoxConfig modMusicbocCfg =
 {
-
+        .btnPlay = &buttons[0],
+        .btnNext = &buttons[1],
+        .btnPrev = &buttons[2],
+        .btnVolUp = &buttons[3],
+        .btnVolDown = &buttons[4],
 };
 
 static uint8_t txbuf[2];
