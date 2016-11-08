@@ -220,7 +220,7 @@
 /*
  * SDC driver system settings.
  */
-#define STM32_SDC_SDIO_DMA_PRIORITY         3
+#define STM32_SDC_SDIO_DMA_PRIORITY         1
 #define STM32_SDC_SDIO_IRQ_PRIORITY         9
 #define STM32_SDC_WRITE_TIMEOUT_MS          250
 #define STM32_SDC_READ_TIMEOUT_MS           25
@@ -256,7 +256,7 @@
 #define STM32_SPI_SPI2_TX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 4)
 #define STM32_SPI_SPI3_RX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 0)
 #define STM32_SPI_SPI3_TX_DMA_STREAM        STM32_DMA_STREAM_ID(1, 7)
-#define STM32_SPI_SPI1_DMA_PRIORITY         1
+#define STM32_SPI_SPI1_DMA_PRIORITY         3
 #define STM32_SPI_SPI2_DMA_PRIORITY         1
 #define STM32_SPI_SPI3_DMA_PRIORITY         1
 #define STM32_SPI_SPI1_IRQ_PRIORITY         10
