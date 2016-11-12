@@ -174,7 +174,7 @@
  * @brief   Enables the USB subsystem.
  */
 #if !defined(HAL_USE_WS281X) || defined(__DOXYGEN__)
-#define HAL_USE_WS281X                 FALSE
+#define HAL_USE_WS281X                 TRUE
 #endif
 
 /**
