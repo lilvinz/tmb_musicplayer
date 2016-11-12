@@ -34,9 +34,9 @@
 
 #include "mfrc522.h"
 #include "vs1053.h"
+#include "ws281x.h"
 
 #include <stdlib.h>
-
 
 ModLED LED_ORANGE;
 ModLED LED_GREEN;
@@ -56,6 +56,7 @@ static CardReaderConfig cardReaderCfg =
 
 MFRC522Driver RFID1;
 VS1053Driver VS1053D1;
+ws281xDriver ws281x;
 
 static RFIDConfig rfidCfg =
 {
