@@ -15,10 +15,16 @@
 #include "vs1053.h"
 #include "mod_led.h"
 
+#include "ws281x.h"
+#include "ledconf.h"
+
+
+
 extern SerialUSBDriver SDU1;
 extern SDCDriver SDCD1;
 extern MFRC522Driver RFID1;
 extern VS1053Driver VS1053D1;
+extern ws281xDriver ws281x;
 
 extern ModLED LED_ORANGE;
 extern ModLED LED_GREEN;
@@ -30,6 +36,31 @@ static ModLEDConfig ledCfg2 = {GPIOD, GPIOD_LED4, false};
 static ModLEDConfig ledCfg3 = {GPIOD, GPIOD_LED5, false};
 static ModLEDConfig ledCfg4 = {GPIOD, GPIOD_LED6, false};
 
+
+static ws281xConfig ws281x_cfg =
+{
+    LEDCOUNT,
+    LED1,
+    {
+        12000000,
+        WS2811_BIT_PWM_WIDTH,
+        NULL,
+        {
+            { PWM_OUTPUT_DISABLED, NULL },
+            { PWM_OUTPUT_DISABLED, NULL },
+            { PWM_OUTPUT_ACTIVE_HIGH, NULL },
+            { PWM_OUTPUT_DISABLED, NULL }
+        },
+        0,
+        TIM_DIER_UDE | TIM_DIER_CC3DE,
+    },
+    &PWMD4,
+    2,
+    WS2811_ZERO_PWM_WIDTH,
+    WS2811_ONE_PWM_WIDTH,
+    STM32_DMA1_STREAM7,
+    2,
+};
 /*
  * Working area for driver.
  */
@@ -99,13 +130,13 @@ void BoardDriverInit(void)
     mod_led_init(&LED_BLUE, &ledCfg4);
 
     /*vs1053 pin configuratio*/
-    palSetPadMode(GPIOB, GPIOB_PIN13, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST );
-    palSetPadMode(GPIOB, GPIOB_PIN14, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
-    palSetPadMode(GPIOB, GPIOB_PIN15, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_HIGHEST);
-    palSetPadMode(GPIOD, 8U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST | PAL_STM32_PUPDR_FLOATING);
-    palSetPadMode(GPIOD, 10U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST | PAL_STM32_PUPDR_FLOATING);
-    palSetPadMode(GPIOD, 11U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST | PAL_STM32_PUPDR_FLOATING);
-    palSetPadMode(GPIOC, 14U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST | PAL_STM32_PUPDR_FLOATING);
+    palSetPadMode(GPIOB, GPIOB_PIN13, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_LOWEST );
+    palSetPadMode(GPIOB, GPIOB_PIN14, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_LOWEST);
+    palSetPadMode(GPIOB, GPIOB_PIN15, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_LOWEST);
+    palSetPadMode(GPIOD, 8U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_LOWEST | PAL_STM32_PUPDR_FLOATING);
+    palSetPadMode(GPIOD, 10U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_LOWEST | PAL_STM32_PUPDR_FLOATING);
+    palSetPadMode(GPIOD, 11U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_LOWEST | PAL_STM32_PUPDR_FLOATING);
+    palSetPadMode(GPIOC, 14U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_LOWEST | PAL_STM32_PUPDR_FLOATING);
     palSetPadMode(GPIOD, 9U, PAL_MODE_INPUT_PULLUP);
 
     /*SDIO Card detection pin*/
@@ -119,7 +150,7 @@ void BoardDriverInit(void)
     palSetPadMode(GPIOD, 2U, PAL_MODE_ALTERNATE(12));
 
     /*mfrc522 cs pins*/
-    palSetPadMode(GPIOC, GPIOC_PIN4, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_HIGHEST | PAL_STM32_PUPDR_FLOATING);
+    palSetPadMode(GPIOC, GPIOC_PIN4, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_LOWEST | PAL_STM32_PUPDR_FLOATING);
 
     /*buttons*/
     palSetPadMode(GPIOE, 5U, PAL_MODE_INPUT_PULLUP);
@@ -128,6 +159,10 @@ void BoardDriverInit(void)
     palSetPadMode(GPIOE, 2U, PAL_MODE_INPUT_PULLUP);
     palSetPadMode(GPIOE, 1U, PAL_MODE_INPUT_PULLUP);
 
+    /*ws2811 led pin*/
+    palSetPadMode(GPIOB, 8, PAL_MODE_ALTERNATE(2));
+
+    ws281xObjectInit(&ws281x);
     sduObjectInit(&SDU1);
     sdcObjectInit (&SDCD1);
     MFRC522ObjectInit(&RFID1);
@@ -136,6 +171,8 @@ void BoardDriverInit(void)
 
 void BoardDriverStart(void)
 {
+    ws281xStart(&ws281x, &ws281x_cfg);
+
     sdcStart(&SDCD1, &sdccfg);
     /*
      * Initializes a serial-over-USB CDC driver.
@@ -146,6 +183,7 @@ void BoardDriverStart(void)
 
     MFRC522Start(&RFID1, &RFID1_cfg);
     VS1053Start(&VS1053D1, &VS1053D1_cfg);
+
 }
 
 void BoardDriverShutdown(void)
@@ -157,6 +195,7 @@ void BoardDriverShutdown(void)
 
     sduStop(&SDU1);
     sdcStop(&SDCD1);
+    ws281xStop(&ws281x);
 }
 
 /** @} */
