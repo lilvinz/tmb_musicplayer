@@ -4,3 +4,6 @@
 [submodule "submodules/mfrc522"]
 	path = submodules/mfrc522
 	url = git@github.com:janfietz/mfrc522.git
+[submodule "submodules/ws281x"]
+	path = submodules/ws281x
+	url = git@github.com:janfietz/ws281x.git

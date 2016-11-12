@@ -88,6 +88,8 @@ PROJECT = tmb_musicbox
 # Imported source files and paths
 CHIBIOS = submodules/ChibiOS
 MFRC522 = submodules/mfrc522
+WS281X = submodules/ws281x
+
 # Startup files.
 include $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC/mk/startup_stm32f4xx.mk
 # HAL-OSAL files (optional).
@@ -98,6 +100,8 @@ include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 # RTOS files (optional).
 include $(CHIBIOS)/os/rt/rt.mk
 include $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
+
+include $(PRJ_SRC)/project.mk
 
 # FATFS files.
 FATFS = $(PRJ_SRC)/ff
@@ -125,15 +129,10 @@ CSRC = $(STARTUPSRC) \
        $(CHIBIOS)/os/hal/lib/streams/chprintf.c \
        $(FATFSSRC) \
        ${MFRC522}/mfrc522.c \
-       $(PRJ_SRC)/vs1053.c \
-       $(PRJ_SRC)/usbcfg.c \
-       $(PRJ_SRC)/mod_led.c \
-       $(PRJ_SRC)/mod_cardreader.c \
-       $(PRJ_SRC)/mod_rfid.c \
-       $(PRJ_SRC)/mod_musicplayer.c \
-       $(PRJ_SRC)/mod_input.c \
-       $(PRJ_SRC)/mod_musicbox.c \
+       ${WS281X}/ws281x.c \
+       $(PROJECT_CSRC) \
        board_drivers.c \
+       ledconf.c \
        main.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
@@ -170,7 +169,8 @@ INCDIR = target \
          $(CHIBIOS)/os/hal/lib/streams \
          $(CHIBIOS)/os/various \
          $(MFRC522) \
-         src
+         $(WS281X) \
+         $(PRJ_SRC)
 
 #
 # Project, sources and paths
