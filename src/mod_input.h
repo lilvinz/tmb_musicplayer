@@ -80,6 +80,6 @@ extern "C" {
 }
 #endif
 
-#endif /* _MOD_LED_H_ */
+#endif /* _MOD_INPUT_H_ */
 
 /** @} */
