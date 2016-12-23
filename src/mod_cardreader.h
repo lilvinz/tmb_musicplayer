@@ -16,6 +16,8 @@
 /*===========================================================================*/
 /* Module constants.                                                         */
 /*===========================================================================*/
+#define CARDREADER_EVENT_MOUNTED 1
+#define CARDREADER_EVENT_UNMOUNTED 2
 
 /*===========================================================================*/
 /* Module pre-compile time settings.                                         */
@@ -63,6 +65,8 @@ extern "C" {
   void mod_cardreader_init(CardReaderConfig* cfgp);
   bool mod_cardreader_start(void);
   void mod_cardreader_stop(void);
+
+  event_source_t* mod_cardreader_eventscource(void);
 
   void mod_cardreader_ls(BaseSequentialStream *chp, char* path);
   bool mod_cardreader_cd(const char* path);

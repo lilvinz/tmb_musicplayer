@@ -25,6 +25,7 @@ typedef struct {
     thread_t* cardDetectionThreadp;
     bool cardDetected;
     FATFS* fsp;
+    event_source_t eventSource;
 } ModCardReaderData;
 
 static ModCardReaderData modCardReaderData;
@@ -237,7 +238,7 @@ static void cardReaderOnCardInserted(ModCardReaderData* datap)
 
     if (mountFS(datap) == true)
     {
-
+        chEvtBroadcastFlags(&datap->eventSource, CARDREADER_EVENT_MOUNTED);
     }
 }
 
@@ -249,6 +250,7 @@ static void cardReaderOnCardRemoved(ModCardReaderData* datap)
     datap->cardDetected = false;
 
     unmountFS(datap);
+    chEvtBroadcastFlags(&datap->eventSource, CARDREADER_EVENT_UNMOUNTED);
 }
 /*
  * This is a periodic thread that reads uid from rfid periphal
@@ -296,6 +298,8 @@ void mod_cardreader_init(CardReaderConfig* cfgp)
 {
     modCardReaderData.cfgp = cfgp;
     modCardReaderData.fsp = &SDC_FS;
+
+    chEvtObjectInit(&modCardReaderData.eventSource);
 }
 
 bool mod_cardreader_start(void)
@@ -316,6 +320,11 @@ void mod_cardreader_stop(void)
         chThdTerminate(modCardReaderData.cardDetectionThreadp);
         modCardReaderData.cardDetectionThreadp = NULL;
     }
+}
+
+event_source_t* mod_cardreader_eventscource(void)
+{
+    return &modCardReaderData.eventSource;
 }
 
 void mod_cardreader_ls(BaseSequentialStream *chp, char* path)
