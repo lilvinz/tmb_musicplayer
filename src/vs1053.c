@@ -133,13 +133,13 @@ static uint16_t ReadRegister(VS1053Driver* VS1053p, uint8_t addressbyte)
     spiSelect(VS1053p->config->spid);
     VS1053p->txBuffer[0] = VS_READ_COMMAND;
     VS1053p->txBuffer[1] = addressbyte;
-    spiExchange(VS1053p->config->spid, 2, VS1053p->txBuffer, VS1053p->rxBuffer);
+    spiExchange(VS1053p->config->spid, 4, VS1053p->txBuffer, VS1053p->rxBuffer);
     spiUnselect(VS1053p->config->spid);
 
     DeactivateSCI(VS1053p);
 
-    uint16_t result = VS1053p->rxBuffer[0] << 8;
-    result |= VS1053p->rxBuffer[1];
+    uint16_t result = VS1053p->rxBuffer[2] << 8;
+    result |= VS1053p->rxBuffer[3];
 
     return result;
 }
@@ -317,9 +317,6 @@ uint8_t VS1053SendData(VS1053Driver* VS1053p, const char* data, uint8_t bytes)
 
     DeactivateSDI(VS1053p);
 
-
-    ActivateSCI(VS1053p);
-
     return bytes;
 }
 
@@ -353,6 +350,40 @@ void VS1053StopPlaying(VS1053Driver* VS1053p)
     }
 
     SoftReset(VS1053p);
+}
+
+void VS1053ReadHeaderData(VS1053Driver* VS1053p, uint16_t* headerData0, uint16_t* headerData1)
+{
+    while (ReadDREQ(VS1053p) == false)
+    {
+        chThdSleep(MS2ST(1));
+    }
+    *headerData0 = ReadRegister(VS1053p, SCI_HDAT0);
+    *headerData1 = ReadRegister(VS1053p, SCI_HDAT1);
+}
+
+uint16_t VS1053ReadStatus(VS1053Driver* VS1053p)
+{
+    while (ReadDREQ(VS1053p) == false)
+    {
+        chThdSleep(MS2ST(1));
+    }
+    return ReadRegister(VS1053p, SCI_STATUS);
+}
+
+uint16_t VS1053ReadSampleRate(VS1053Driver* VS1053p)
+{
+    while (ReadDREQ(VS1053p) == false)
+    {
+        chThdSleep(MS2ST(1));
+    }
+    return ReadRegister(VS1053p, SCI_AUDATA);
+}
+
+void VS1053GiveBus(VS1053Driver* VS1053p)
+{
+    ActivateSDI(VS1053p);
+    ActivateSCI(VS1053p);
 }
 
 #endif /* HAL_USE_VS1053 */

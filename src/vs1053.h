@@ -104,13 +104,13 @@ struct VS1053Driver {
    */
   const VS1053Config           *config;
   uint8_t                  txBuffer[4];
-  uint8_t                  rxBuffer[2];
+  uint8_t                  rxBuffer[4];
   /* End of the mandatory fields.*/
 };
 /*===========================================================================*/
 /* Driver macros.                                                            */
 /*===========================================================================*/
-
+#define VS1053CanJump(status) (status && (1 << 15) == 0)
 /*===========================================================================*/
 /* External declarations.                                                    */
 /*===========================================================================*/
@@ -127,6 +127,10 @@ extern "C" {
   void VS1053SetVolume(VS1053Driver* VS1053p, uint8_t leftVol, uint8_t rightVol);
   uint8_t VS1053SendData(VS1053Driver* VS1053p, const char* data, uint8_t bytes);
   void VS1053StopPlaying(VS1053Driver* VS1053p);
+  void VS1053ReadHeaderData(VS1053Driver* VS1053p, uint16_t* headerData0, uint16_t* headerData1);
+  uint16_t VS1053ReadStatus(VS1053Driver* VS1053p);
+  uint16_t VS1053ReadSampleRate(VS1053Driver* VS1053p);
+  void VS1053GiveBus(VS1053Driver* VS1053p);
 #ifdef __cplusplus
 }
 #endif
