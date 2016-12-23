@@ -7,7 +7,7 @@
  */
 
 #ifndef _MOD_MUSICBOX_H_
-#define _MOD_MUSICPLAYER_H_
+#define _MOD_MUSICBOX_H_
 
 #include "hal.h"
 #include "mod_input.h"
@@ -64,6 +64,6 @@ extern "C" {
 }
 #endif
 
-#endif /* _MOD_MUSICPLAYER_H_ */
+#endif /* _MOD_MUSICBOX_H_ */
 
 /** @} */

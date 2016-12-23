@@ -19,6 +19,7 @@
 #include "ff.h"
 #include "mod_rfid.h"
 #include "mod_musicplayer.h"
+#include "mod_cardreader.h"
 
 #define EVENTMASK_RFID EVENT_MASK(0)
 #define EVENTMASK_BTN_PLAY EVENT_MASK(1)
@@ -26,6 +27,11 @@
 #define EVENTMASK_BTN_PREV EVENT_MASK(3)
 #define EVENTMASK_BTN_VOLUP EVENT_MASK(4)
 #define EVENTMASK_BTN_VOLDOWN EVENT_MASK(5)
+#define EVENTMASK_CARDREADER EVENT_MASK(6)
+
+/* Generic large buffer.*/
+static char absoluteFileNameBuffer[1024];
+static char fileNameBuffer[512];
 
 typedef void (*ButtonEventHandler)(Button*, eventflags_t);
 typedef struct
@@ -42,6 +48,8 @@ typedef struct
     thread_t* pThread;
     ButtonData buttons[5];
     int16_t volume;
+    bool hasRFIDCard;
+    struct MifareUID uid;
 } ModMusicBoxData;
 static ModMusicBoxData modMusicBoxData;
 
@@ -81,6 +89,68 @@ static void ChangeVolume(int16_t diff)
     mod_musicplayer_cmdVolume((uint8_t)modMusicBoxData.volume);
 }
 
+static size_t MifareUIDToString(const struct MifareUID* uid, char* psz)
+{
+    int i;
+    size_t charCount = 0;
+    char* pszTarget = psz;
+    for (i = 0; i < uid->size; i++)
+    {
+        char c = 0x0f & (uid->bytes[i] >> 4);
+        if (c < 10)
+        {
+            *pszTarget = c + '0';
+        }
+        else
+        {
+            *pszTarget = c + ('A' - 10);
+        }
+
+        pszTarget++;
+        charCount++;
+
+        c = 0x0f & uid->bytes[i];
+        if (c < 10)
+        {
+            *pszTarget = c + '0';
+        }
+        else
+        {
+            *pszTarget = c + ('A' - 10);
+        }
+
+        pszTarget++;
+        charCount ++;
+    }
+
+    *pszTarget = 0;
+    return charCount;
+}
+
+static void ProcessMifareUID(struct MifareUID* uid)
+{
+    DIR directory;
+
+    FILINFO fileInfo;
+    fileInfo.lfname = fileNameBuffer;
+    fileInfo.lfsize = sizeof(fileNameBuffer);
+
+    char pszUID[32];
+
+    if (MifareUIDToString(uid, pszUID) > 0)
+    {
+        /*search for folder*/
+        if (mod_cardreader_find(&directory, &fileInfo, "/music", pszUID) == true)
+        {
+            memset(absoluteFileNameBuffer, 0, sizeof(absoluteFileNameBuffer));
+            strcat(absoluteFileNameBuffer, "/music/");
+            strcat(absoluteFileNameBuffer, fileInfo.lfname);
+
+            mod_musicplayer_cmdPlay(absoluteFileNameBuffer);
+        }
+    }
+}
+
 
 static THD_WORKING_AREA(waMusicBoxThread, MOD_MUSICBOX_THREADSIZE);
 /*
@@ -93,10 +163,16 @@ static THD_FUNCTION(musicbox, arg)
 
     event_listener_t rfidEvtListener;
     chEvtRegisterMaskWithFlags(mod_rfid_eventscource(), &rfidEvtListener,
-    EVENTMASK_RFID,
-    RFID_DETECTED | RFID_LOST);
+                EVENTMASK_RFID,
+                RFID_DETECTED | RFID_LOST);
+
+    event_listener_t cardreaderEvtListener;
+   chEvtRegisterMaskWithFlags(mod_cardreader_eventscource(), &cardreaderEvtListener,
+               EVENTMASK_CARDREADER,
+               CARDREADER_EVENT_MOUNTED | CARDREADER_EVENT_UNMOUNTED);
 
     RegisterButtonEvents();
+
 
     while (!chThdShouldTerminateX())
     {
@@ -107,11 +183,35 @@ static THD_FUNCTION(musicbox, arg)
 
             if (flags & RFID_DETECTED)
             {
-
+                if (mod_rfid_cardid(&modMusicBoxData.uid) == true)
+                {
+                    modMusicBoxData.hasRFIDCard = true;
+                    ProcessMifareUID(&modMusicBoxData.uid);
+                }
             }
+
             if (flags & RFID_LOST)
             {
+                modMusicBoxData.hasRFIDCard = false;
+                mod_musicplayer_cmdStop();
+            }
+        }
 
+        if (evt & EVENTMASK_CARDREADER)
+        {
+            eventflags_t flags = chEvtGetAndClearFlags(&cardreaderEvtListener);
+
+            if (flags & CARDREADER_EVENT_MOUNTED)
+            {
+                if (modMusicBoxData.hasRFIDCard == true)
+                {
+                    ProcessMifareUID(&modMusicBoxData.uid);
+                }
+            }
+
+            if (flags & CARDREADER_EVENT_UNMOUNTED)
+            {
+                mod_musicplayer_cmdStop();
             }
         }
 
@@ -203,6 +303,8 @@ void mod_musicbox_init(MusicBoxConfig* cfgp)
     modMusicBoxData.buttons[4].evtMask = EVENTMASK_BTN_VOLDOWN;
 
     modMusicBoxData.volume = 50;
+
+    modMusicBoxData.hasRFIDCard = false;
 }
 
 bool mod_musicbox_start(void)
