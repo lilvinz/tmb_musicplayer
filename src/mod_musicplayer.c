@@ -171,8 +171,10 @@ static THD_FUNCTION(dataPump, arg)
           FRESULT err = f_open(&fsrc, datap->fileNameBuff, FA_READ);
           if (err == FR_OK)
           {
-              //startTransfer = false;
-
+              bool bReadStreamHeader = true;
+              uint16_t headerDater[2];
+              uint16_t codecStatus;
+              uint32_t byteTransferred = 0;
               /*
                * Do while the number of bytes read is equal to the number of bytes to read
                * (the buffer is filled)
@@ -188,16 +190,66 @@ static THD_FUNCTION(dataPump, arg)
                   mod_led_on(datap->cfgp->ledReadData);
                   err = f_read(&fsrc, Buffer, ByteToRead, &ByteRead);
                   mod_led_off(datap->cfgp->ledReadData);
-                  if (err == FR_OK)
+                  if (err == FR_OK && ByteRead > 0)
                   {
-                      mod_led_on(datap->cfgp->ledSendData);
                       chMtxLock(&modMusicPlayerData.mtxCodec);
+                      mod_led_on(datap->cfgp->ledSendData);
                       if (VS1053SendData(datap->cfgp->codecp, Buffer, ByteRead) != ByteRead)
                       {
                           ByteRead = 0;
                       }
+                      codecStatus = VS1053ReadStatus(datap->cfgp->codecp);
                       chMtxUnlock(&modMusicPlayerData.mtxCodec);
                       mod_led_off(datap->cfgp->ledSendData);
+
+                      byteTransferred = byteTransferred + ByteRead;
+
+                      if (bReadStreamHeader == true)
+                      {
+                          chMtxLock(&modMusicPlayerData.mtxCodec);
+                          VS1053ReadHeaderData(datap->cfgp->codecp, headerDater, headerDater + 1);
+                          chMtxUnlock(&modMusicPlayerData.mtxCodec);
+                          bool formatUnknown = false;
+                          if (headerDater[1] > 0xFFE0)
+                          {
+                              //mp3 file
+                          }
+                          else if (headerDater[1] > 0x7665) // "ve"
+                          {
+                              //wav file
+                          }
+                          else if (headerDater[1] > 0x4154) // "AT"
+                            {
+                                //AAC ADTSF file
+                            }
+                          else if (headerDater[1] > 0x4144) // "AD"
+                          {
+                              //AAC .ADIF file
+                          }
+                          else if (headerDater[1] > 0x4D34) // "M4"
+                            {
+                                //AAC .mp4 file
+                            }
+                          else if (headerDater[1] > 0x574D) // "WM"
+                          {
+                              //WMA file
+                          }
+                          else if (headerDater[1] > 0x4D54) // "MT"
+                        {
+                            //Midi file
+                        }
+                          else if (headerDater[1] > 0x4F67) // "Og"
+                          {
+                              //Ogg Vorbis file
+                          }
+                          else
+                          {
+                              //unknow
+                              formatUnknown = true;
+                          }
+                          bReadStreamHeader = VS1053CanJump(codecStatus) && !formatUnknown;
+                      }
+
                   }
 
                   if (datap->transferFile == false)
@@ -268,6 +320,7 @@ static THD_FUNCTION(musicplayer, arg)
           else
           {
               datap->state = 0;
+              VS1053GiveBus(datap->cfgp->codecp);
           }
       }
       else if (evt & EVENTMASK_COMMANDS)
