@@ -180,82 +180,92 @@ static THD_FUNCTION(dataPump, arg)
                * (the buffer is filled)
                */
               do {
-                  /*
-                   * Clear the buffer.
-                   */
-                  memset(Buffer,0,sizeof(Buffer));
-                  /*
-                   * Read the file.
-                   */
-                  mod_led_on(datap->cfgp->ledReadData);
-                  err = f_read(&fsrc, Buffer, ByteToRead, &ByteRead);
-                  mod_led_off(datap->cfgp->ledReadData);
-                  if (err == FR_OK && ByteRead > 0)
-                  {
-                      chMtxLock(&modMusicPlayerData.mtxCodec);
-                      mod_led_on(datap->cfgp->ledSendData);
-                      if (VS1053SendData(datap->cfgp->codecp, Buffer, ByteRead) != ByteRead)
-                      {
-                          ByteRead = 0;
-                      }
-                      codecStatus = VS1053ReadStatus(datap->cfgp->codecp);
-                      chMtxUnlock(&modMusicPlayerData.mtxCodec);
-                      mod_led_off(datap->cfgp->ledSendData);
-
-                      byteTransferred = byteTransferred + ByteRead;
-
-                      if (bReadStreamHeader == true)
+                    if (datap->transferFile == false)
+                    {
+                        if (datap->state == 2)
+                        {
+                            /*pause*/
+                            chThdSleep(MS2ST(1));
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        /*
+                       * Clear the buffer.
+                       */
+                      memset(Buffer,0,sizeof(Buffer));
+                      /*
+                       * Read the file.
+                       */
+                      mod_led_on(datap->cfgp->ledReadData);
+                      err = f_read(&fsrc, Buffer, ByteToRead, &ByteRead);
+                      mod_led_off(datap->cfgp->ledReadData);
+                      if (err == FR_OK && ByteRead > 0)
                       {
                           chMtxLock(&modMusicPlayerData.mtxCodec);
-                          VS1053ReadHeaderData(datap->cfgp->codecp, headerDater, headerDater + 1);
+                          mod_led_on(datap->cfgp->ledSendData);
+                          if (VS1053SendData(datap->cfgp->codecp, Buffer, ByteRead) != ByteRead)
+                          {
+                              ByteRead = 0;
+                          }
+                          codecStatus = VS1053ReadStatus(datap->cfgp->codecp);
                           chMtxUnlock(&modMusicPlayerData.mtxCodec);
-                          bool formatUnknown = false;
-                          if (headerDater[1] > 0xFFE0)
+                          mod_led_off(datap->cfgp->ledSendData);
+
+                          byteTransferred = byteTransferred + ByteRead;
+
+                          if (bReadStreamHeader == true)
                           {
-                              //mp3 file
-                          }
-                          else if (headerDater[1] > 0x7665) // "ve"
-                          {
-                              //wav file
-                          }
-                          else if (headerDater[1] > 0x4154) // "AT"
+                              chMtxLock(&modMusicPlayerData.mtxCodec);
+                              VS1053ReadHeaderData(datap->cfgp->codecp, headerDater, headerDater + 1);
+                              chMtxUnlock(&modMusicPlayerData.mtxCodec);
+                              bool formatUnknown = false;
+                              if (headerDater[1] > 0xFFE0)
+                              {
+                                  //mp3 file
+                              }
+                              else if (headerDater[1] > 0x7665) // "ve"
+                              {
+                                  //wav file
+                              }
+                              else if (headerDater[1] > 0x4154) // "AT"
+                                {
+                                    //AAC ADTSF file
+                                }
+                              else if (headerDater[1] > 0x4144) // "AD"
+                              {
+                                  //AAC .ADIF file
+                              }
+                              else if (headerDater[1] > 0x4D34) // "M4"
+                                {
+                                    //AAC .mp4 file
+                                }
+                              else if (headerDater[1] > 0x574D) // "WM"
+                              {
+                                  //WMA file
+                              }
+                              else if (headerDater[1] > 0x4D54) // "MT"
                             {
-                                //AAC ADTSF file
+                                //Midi file
                             }
-                          else if (headerDater[1] > 0x4144) // "AD"
-                          {
-                              //AAC .ADIF file
+                              else if (headerDater[1] > 0x4F67) // "Og"
+                              {
+                                  //Ogg Vorbis file
+                              }
+                              else
+                              {
+                                  //unknow
+                                  formatUnknown = true;
+                              }
+                              bReadStreamHeader = VS1053CanJump(codecStatus) && !formatUnknown;
                           }
-                          else if (headerDater[1] > 0x4D34) // "M4"
-                            {
-                                //AAC .mp4 file
-                            }
-                          else if (headerDater[1] > 0x574D) // "WM"
-                          {
-                              //WMA file
-                          }
-                          else if (headerDater[1] > 0x4D54) // "MT"
-                        {
-                            //Midi file
-                        }
-                          else if (headerDater[1] > 0x4F67) // "Og"
-                          {
-                              //Ogg Vorbis file
-                          }
-                          else
-                          {
-                              //unknow
-                              formatUnknown = true;
-                          }
-                          bReadStreamHeader = VS1053CanJump(codecStatus) && !formatUnknown;
+
                       }
-
-                  }
-
-                  if (datap->transferFile == false)
-                  {
-                      break;
-                  }
+                    }
               } while (ByteRead >= ByteToRead);
 
               f_close(&fsrc);

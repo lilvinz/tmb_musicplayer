@@ -46,7 +46,8 @@ static THD_FUNCTION(rfidReader, arg)
     while (!chThdShouldTerminateX())
     {
         chMtxLock(&CardIDMutex);
-        if (MifareCheck(datap->cfgp->mfrcd, &datap->cardID) == MIFARE_OK)
+        MIFARE_Status_t status = MifareCheck(datap->cfgp->mfrcd, &datap->cardID);
+        if (status == MIFARE_OK)
         {
             if (datap->detectedCard == false)
             {

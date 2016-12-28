@@ -362,7 +362,7 @@ int main(void)
 
 
     /*play file from start*/
-    mod_musicplayer_cmdPlay("/music/rock_pop");
+    //mod_musicplayer_cmdPlay("/music/rock_pop");
 
 
     /*

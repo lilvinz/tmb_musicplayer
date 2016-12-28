@@ -20,7 +20,7 @@
 /* Module pre-compile time settings.                                         */
 /*===========================================================================*/
 #ifndef MOD_MUSICBOX_THREADSIZE
-#define MOD_MUSICBOX_THREADSIZE 512
+#define MOD_MUSICBOX_THREADSIZE 640
 #endif
 
 #ifndef MOD_MUSICBOX_THREADPRIO
