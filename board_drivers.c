@@ -13,7 +13,6 @@
 #include "usbcfg.h"
 #include "mfrc522.h"
 #include "vs1053.h"
-#include "mod_led.h"
 
 #include "ws281x.h"
 #include "ledconf.h"
@@ -22,20 +21,9 @@
 
 extern SerialUSBDriver SDU1;
 extern SDCDriver SDCD1;
-extern MFRC522Driver RFID1;
-extern VS1053Driver VS1053D1;
-extern ws281xDriver ws281x;
-
-extern ModLED LED_ORANGE;
-extern ModLED LED_GREEN;
-extern ModLED LED_BLUE;
-extern ModLED LED_RED;
-
-static ModLEDConfig ledCfg1 = {GPIOD, GPIOD_LED3, false};
-static ModLEDConfig ledCfg2 = {GPIOD, GPIOD_LED4, false};
-static ModLEDConfig ledCfg3 = {GPIOD, GPIOD_LED5, false};
-static ModLEDConfig ledCfg4 = {GPIOD, GPIOD_LED6, false};
-
+static MFRC522Driver RFID1;
+static VS1053Driver VS1053D1;
+static ws281xDriver ws281x;
 
 static ws281xConfig ws281x_cfg =
 {
@@ -124,11 +112,6 @@ static MFRC522Config RFID1_cfg =
 
 void BoardDriverInit(void)
 {
-    mod_led_init(&LED_ORANGE, &ledCfg1);
-    mod_led_init(&LED_GREEN, &ledCfg2);
-    mod_led_init(&LED_RED, &ledCfg3);
-    mod_led_init(&LED_BLUE, &ledCfg4);
-
     /*vs1053 pin configuratio*/
     palSetPadMode(GPIOB, GPIOB_PIN13, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_LOWEST );
     palSetPadMode(GPIOB, GPIOB_PIN14, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_LOWEST);
@@ -196,6 +179,62 @@ void BoardDriverShutdown(void)
     sduStop(&SDU1);
     sdcStop(&SDCD1);
     ws281xStop(&ws281x);
+}
+
+void GetLedConfig(int16_t ledid, LEDPinConfig* pconfig)
+{
+    switch (ledid)
+    {
+    case TMB_LED_SDCARDREAD:
+        pconfig->gpio = GPIOD;
+        pconfig->pin = GPIOD_LED5;
+        pconfig->clearOn = false;
+        break;
+    case TMB_LED_CODECDECODE:
+        pconfig->gpio = GPIOD;
+        pconfig->pin = GPIOD_LED6;
+        pconfig->clearOn = false;
+        break;
+    case TMB_LED_RFIDDETECT:
+        pconfig->gpio = GPIOD;
+        pconfig->pin = GPIOD_LED3;
+        pconfig->clearOn = false;
+        break;
+    case TMB_LED_SDCARDDETECT:
+        pconfig->gpio = GPIOD;
+        pconfig->pin = GPIOD_LED4;
+        pconfig->clearOn = false;
+        break;
+    }
+}
+
+static uint8_t txbuf[2];
+static uint8_t rxbuf[2];
+
+void MFRC522WriteRegister(MFRC522Driver* mfrc522p, uint8_t addr, uint8_t val)
+{
+    (void)mfrc522p;
+    spiSelect(&SPID1);
+    txbuf[0] = (addr << 1) & 0x7E;
+    txbuf[1] = val;
+    spiSend(&SPID1, 2, txbuf);
+    spiUnselect(&SPID1);
+}
+
+uint8_t MFRC522ReadRegister(MFRC522Driver* mfrc522p, uint8_t addr)
+{
+    (void)mfrc522p;
+    spiSelect(&SPID1);
+    txbuf[0] = ((addr << 1) & 0x7E) | 0x80;
+    txbuf[1] = 0xff;
+    spiExchange(&SPID1, 2, txbuf, rxbuf);
+    spiUnselect(&SPID1);
+    return rxbuf[1];
+}
+
+MFRC522Driver* GetRFIDDriver(void)
+{
+    return &RFID1;
 }
 
 /** @} */

@@ -10,13 +10,12 @@
 #define _MOD_INPUT_H_
 
 #include "hal.h"
+#include "module.h"
+#include "button.h"
 
 /*===========================================================================*/
 /* Module constants.                                                         */
 /*===========================================================================*/
-#define BUTTON_DOWN 1
-#define BUTTON_UP 2
-#define BUTTON_PRESSED 4
 
 /*===========================================================================*/
 /* Module pre-compile time settings.                                         */
@@ -36,31 +35,29 @@
 /*===========================================================================*/
 /* Module data structures and types.                                         */
 /*===========================================================================*/
+namespace tmb_musicplayer
+{
 
-typedef struct {
-    ioportid_t port;
-    uint8_t pad;
-} ButtonConfig;
+class ModuleInput : public Module<MOD_INPUT_THREADSIZE>
+{
+public:
+    ModuleInput(Button** btns, size_t count);
 
-typedef struct {
-    ButtonConfig cfg;
-    event_source_t eventSource;
-    bool lastState;
-    bool state;
-    systime_t lastDebounceTime;
-    systime_t lastDownTime;
-} Button;
+    virtual void Start();
+    virtual void Shutdown();
 
+protected:
+    typedef Module<MOD_INPUT_THREADSIZE> BaseClass;
 
-/**
- * @brief
- */
-typedef struct {
-    Button* pButtons;
-    uint32_t buttonCount;
-} ModInputConfig;
+    virtual void ThreadMain();
 
+    virtual tprio_t GetThreadPrio() const {return MOD_INPUT_THREADPRIO;}
+private:
+    Button** buttons;
+    size_t buttonCount;
+};
 
+}
 
 /*===========================================================================*/
 /* Module macros.                                                            */
@@ -70,15 +67,6 @@ typedef struct {
 /* External declarations.                                                    */
 /*===========================================================================*/
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-  void mod_input_init(ModInputConfig* config);
-  bool mod_input_start(void);
-  void mod_input_shutdown(void);
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _MOD_INPUT_H_ */
 

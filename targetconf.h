@@ -8,7 +8,12 @@
 #ifndef _TARGETCONF_H_
 #define _TARGETCONF_H_
 
+#ifdef __cplusplus
+#include "ch.hpp"
+#else
 #include "ch.h"
+#endif
+
 #include "hal.h"
 #include "board_drivers.h"
 #include "usbcfg.h"

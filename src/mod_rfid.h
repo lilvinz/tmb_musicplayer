@@ -10,14 +10,13 @@
 #define _MOD_RFID_H_
 
 #include "hal.h"
+#include "module.h"
 #include "mod_led.h"
 #include "mfrc522.h"
 
 /*===========================================================================*/
 /* Module constants.                                                         */
 /*===========================================================================*/
-#define RFID_DETECTED 1
-#define RFID_LOST 2
 
 /*===========================================================================*/
 /* Module pre-compile time settings.                                         */
@@ -37,14 +36,55 @@
 /*===========================================================================*/
 /* Module data structures and types.                                         */
 /*===========================================================================*/
-
+namespace tmb_musicplayer
+{
 /**
- * @brief   RFID descriptor type.
+ * @brief
  */
-typedef struct {
-    MFRC522Driver* mfrcd;
-    ModLED* ledCardDetect;
-} RFIDConfig;
+
+class ModuleRFID : public Module<MOD_RFID_THREADSIZE>
+{
+public:
+    enum EventsFlags
+    {
+        CardDetected = 1 << 0,
+        CardLost = 1 << 1,
+    };
+
+    ModuleRFID();
+
+    virtual void Start();
+    virtual void Shutdown();
+
+    void SetDriver(MFRC522Driver* driver);
+    void SetLed(Led* led);
+
+    void RegisterListener(chibios_rt::EvtListener* listener, eventmask_t mask);
+    void UnregisterListener(chibios_rt::EvtListener* listener);
+
+    bool GetCurrentCardId(MifareUID& id);
+
+protected:
+    typedef Module<MOD_RFID_THREADSIZE> BaseClass;
+
+    virtual void ThreadMain();
+
+    virtual tprio_t GetThreadPrio() const {return MOD_RFID_THREADPRIO;}
+
+private:
+    void SetCardDetectLed(bool on);
+
+    bool m_detectedCard;
+    MFRC522Driver* m_mfrcDriver;
+    Led* m_detectLed;
+    MifareUID m_cardID;
+
+    chibios_rt::EvtSource m_evtSource;
+    chibios_rt::Mutex m_mutex;
+};
+
+}
+
 
 /*===========================================================================*/
 /* Module macros.                                                            */
@@ -53,18 +93,6 @@ typedef struct {
 /*===========================================================================*/
 /* External declarations.                                                    */
 /*===========================================================================*/
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-  void mod_rfid_init(RFIDConfig* cfgp);
-  bool mod_rfid_start(void);
-  void mod_rfid_stop(void);
-  event_source_t* mod_rfid_eventscource(void);
-  bool mod_rfid_cardid(struct MifareUID* id);
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _MOD_RFID_H_ */
 

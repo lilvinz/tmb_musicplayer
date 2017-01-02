@@ -101,6 +101,9 @@ include $(CHIBIOS)/os/hal/osal/rt/osal.mk
 include $(CHIBIOS)/os/rt/rt.mk
 include $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 
+# Other files 
+include $(CHIBIOS)/os/various/cpp_wrappers/chcpp.mk
+
 include $(PRJ_SRC)/project.mk
 
 # FATFS files.
@@ -132,12 +135,13 @@ CSRC = $(STARTUPSRC) \
        ${WS281X}/ws281x.c \
        $(PROJECT_CSRC) \
        board_drivers.c \
-       ledconf.c \
-       main.c
+       ledconf.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
-CPPSRC =
+CPPSRC = $(CHCPPSRC) \
+	$(PROJECT_CPPSRC) \
+         main.cpp
 
 # C sources to be compiled in ARM mode regardless of the global setting.
 # NOTE: Mixing ARM and THUMB mode enables the -mthumb-interwork compiler
@@ -165,6 +169,7 @@ ASMSRC = $(STARTUPASM) $(PORTASM) $(OSALASM)
 INCDIR = target \
          $(STARTUPINC) $(KERNINC) $(PORTINC) $(OSALINC) \
          $(HALINC) $(PLATFORMINC) $(BOARDINC) $(TESTINC) \
+         $(CHCPPINC) \
          $(FATFSINC) \
          $(CHIBIOS)/os/hal/lib/streams \
          $(CHIBIOS)/os/various \

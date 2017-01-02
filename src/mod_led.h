@@ -27,28 +27,30 @@
 /*===========================================================================*/
 /* Module data structures and types.                                         */
 /*===========================================================================*/
-
-
-/**
- * @brief   Driver configuration structure.
- * @note    Implementations may extend this structure to contain more,
- *          architecture dependent, fields.
- */
-typedef struct {
-    stm32_gpio_t *gpio;
-    uint32_t pin;
-    bool clearOn;
-} ModLEDConfig;
-
-/**
- * @brief   Structure representing an SPI driver.
- * @note    Implementations may extend this structure to contain more,
- *          architecture dependent, fields.
- */
-typedef struct
+namespace tmb_musicplayer
 {
-   const ModLEDConfig           *config;
-} ModLED;
+/**
+ * @brief
+ */
+class Led
+{
+public:
+    Led();
+
+    void Initialize(stm32_gpio_t* port, uint32_t pad, bool clearOn);
+
+    void On();
+    void Off();
+    void Toggle();
+
+    bool IsOn();
+private:
+    stm32_gpio_t* m_port;
+    uint32_t m_pad;
+    bool m_clearOn;
+};
+
+}
 
 /*===========================================================================*/
 /* Module macros.                                                            */
@@ -57,17 +59,6 @@ typedef struct
 /*===========================================================================*/
 /* External declarations.                                                    */
 /*===========================================================================*/
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-  void mod_led_init(ModLED* ledp, ModLEDConfig* ledConfp);
-  void mod_led_on(ModLED* ledp);
-  void mod_led_off(ModLED* ledp);
-  void mod_led_shutdown(ModLED* ledp);
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _MOD_LED_H_ */
 
