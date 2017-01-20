@@ -18,8 +18,8 @@
 
 #include "ff.h"
 #include "mod_rfid.h"
+#include "mod_cardreader.h"
 //#include "mod_musicplayer.h"
-//#include "mod_cardreader.h"
 
 #define EVENTMASK_RFID EVENT_MASK(0)
 #define EVENTMASK_BTN_PLAY EVENT_MASK(1)
@@ -33,7 +33,9 @@ namespace tmb_musicplayer
 {
 
 ModuleMusicbox::ModuleMusicbox() :
-        m_modRFID(NULL)
+        m_modRFID(NULL),
+        m_modCardreader(NULL),
+        m_cardDetectLED(NULL)
 {
     //buttons[0].button = cfgp->btnPlay;
     buttons[Play].handler = &ModuleMusicbox::OnPlayButton;
@@ -76,10 +78,16 @@ void ModuleMusicbox::ThreadMain()
     chRegSetThreadName("musicbox");
 
     chibios_rt::EvtListener rfidEvtListener;
+    chibios_rt::EvtListener cardreaderEvtListener;
 
     if (m_modRFID != NULL)
     {
         m_modRFID->RegisterListener(&rfidEvtListener, EVENTMASK_RFID);
+    }
+
+    if (m_modCardreader != NULL)
+    {
+        m_modCardreader->RegisterListener(&cardreaderEvtListener, EVENTMASK_CARDREADER);
     }
 
 //
@@ -97,6 +105,12 @@ void ModuleMusicbox::ThreadMain()
         {
             eventflags_t flags = rfidEvtListener.getAndClearFlags();
             OnRFIDEvent(flags);
+        }
+
+        if (evt & EVENTMASK_CARDREADER)
+        {
+            eventflags_t flags = cardreaderEvtListener.getAndClearFlags();
+            OnCardReaderEvent(flags);
         }
 //
 //        if (evt & EVENTMASK_CARDREADER)
@@ -131,6 +145,11 @@ void ModuleMusicbox::ThreadMain()
     }
 
     UnregisterButtonEvents();
+
+    if (m_modCardreader != NULL)
+    {
+        m_modCardreader->UnregisterListener(&cardreaderEvtListener);
+    }
 
     if (m_modRFID != NULL)
     {
@@ -225,6 +244,25 @@ void ModuleMusicbox::OnRFIDEvent(eventflags_t flags)
     }
 }
 
+void ModuleMusicbox::OnCardReaderEvent(eventflags_t flags)
+{
+    if (flags & ModuleCardreader::FilesystemMounted)
+    {
+        if (m_cardDetectLED != NULL)
+        {
+            m_cardDetectLED->On();
+        }
+    }
+
+    if (flags & ModuleCardreader::FilesystemUnmounted)
+    {
+        if (m_cardDetectLED != NULL)
+        {
+            m_cardDetectLED->Off();
+        }
+    }
+}
+
 void ModuleMusicbox::ChangeVolume(int16_t diff)
 {
     volume = volume + diff;
@@ -252,15 +290,19 @@ void ModuleMusicbox::ProcessMifareUID(const MifareUID& uid)
 
     if (MifareUIDToString(uid, pszUID) > 0)
     {
-//        /*search for folder*/
-//        if (mod_cardreader_find(&directory, &fileInfo, "/music", pszUID) == true)
-//        {
-//            memset(absoluteFileNameBuffer, 0, sizeof(absoluteFileNameBuffer));
-//            strcat(absoluteFileNameBuffer, "/music/");
-//            strcat(absoluteFileNameBuffer, fileInfo.lfname);
-//
-//            //mod_musicplayer_cmdPlay(absoluteFileNameBuffer);
-//        }
+        /*search for folder*/
+        if (m_modCardreader != NULL)
+        {
+            if (m_modCardreader->CommandFind(&directory, &fileInfo, "/music", pszUID) == true)
+            {
+                memset(absoluteFileNameBuffer, 0, sizeof(absoluteFileNameBuffer));
+                strcat(absoluteFileNameBuffer, "/music/");
+                strcat(absoluteFileNameBuffer, fileInfo.lfname);
+
+                //mod_musicplayer_cmdPlay(absoluteFileNameBuffer);
+            }
+        }
+
     }
 }
 
@@ -305,6 +347,13 @@ size_t ModuleMusicbox::MifareUIDToString(const MifareUID& uid, char* psz)
 void ModuleMusicbox::SetRFIDModule(ModuleRFID* module)
 {
     m_modRFID = module;
+}
+
+void ModuleMusicbox::SetCardreaderModule(ModuleCardreader* module, Led* led)
+{
+    m_modCardreader = module;
+
+    m_cardDetectLED = led;
 }
 
 }

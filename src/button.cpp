@@ -78,6 +78,11 @@ bool Button::ReadPal(ioportid_t port, uint8_t pad)
 {
     return palReadPad(port, pad);
 }
+
+bool Button::GetState() const
+{
+    return state;
+}
 }
 
 /** @} */

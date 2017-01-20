@@ -35,6 +35,8 @@ public:
     void InitState(systime_t now);
     void Process(systime_t now);
 
+    bool GetState() const;
+
 private:
 
     static bool ReadPal(ioportid_t port, uint8_t pad);

@@ -63,6 +63,7 @@ public:
 
     void SetButton(ButtonType type, Button* button);
     void SetRFIDModule(class ModuleRFID* module);
+    void SetCardreaderModule(class ModuleCardreader* module, class Led* led);
 
 protected:
     typedef Module<MOD_MUSICBOX_THREADSIZE> BaseClass;
@@ -87,6 +88,7 @@ private:
     void OnVolUpButton(Button* btn, eventflags_t flags);
     void OnVolDownButton(Button* btn, eventflags_t flags);
     void OnRFIDEvent(eventflags_t flags);
+    void OnCardReaderEvent(eventflags_t flags);
 
     void RegisterButtonEvents();
     void UnregisterButtonEvents();
@@ -109,6 +111,9 @@ private:
     char fileNameBuffer[512];
 
     class ModuleRFID* m_modRFID;
+    class ModuleCardreader* m_modCardreader;
+
+    class Led* m_cardDetectLED;
 };
 
 }

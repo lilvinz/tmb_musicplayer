@@ -37,6 +37,7 @@ void BoardDriverShutdown(void);
 
 void GetLedConfig(int16_t ledid, LEDPinConfig* pconfig);
 MFRC522Driver* GetRFIDDriver(void);
+SDCDriver* GetCardDriver(void);
 
 #ifdef __cplusplus
 }

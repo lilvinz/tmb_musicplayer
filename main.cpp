@@ -29,6 +29,7 @@
 #include "mod_led.h"
 #include "mod_input.h"
 #include "mod_rfid.h"
+#include "mod_cardreader.h"
 #include "mod_musicbox.h"
 
 #include "mfrc522.h"
@@ -40,11 +41,13 @@ static Button nextBtn(GPIOE, 2);
 static Button prevBtn(GPIOE, 4);
 static Button volupBtn(GPIOE, 1);
 static Button voldownBtn(GPIOE, 5);
+static Button carddetectBtn(GPIOA, 15U);
 
-static Button* buttons[] = {&playBtn, &nextBtn, &prevBtn, &volupBtn, &voldownBtn};
+static Button* buttons[] = {&playBtn, &nextBtn, &prevBtn, &volupBtn, &voldownBtn, &carddetectBtn};
 
-static ModuleInput modInput(buttons, 5);
+static ModuleInput modInput(buttons, 6);
 static ModuleRFID modRFID;
+static ModuleCardreader modCardreader;
 static ModuleMusicbox modMusicbox;
 
 static Led SDCardReadLed;
@@ -101,15 +104,20 @@ int main(void)
     modMusicbox.SetButton(ModuleMusicbox::VolUp, &volupBtn);
     modMusicbox.SetButton(ModuleMusicbox::VolDown, &voldownBtn);
     modMusicbox.SetRFIDModule(&modRFID);
+    modMusicbox.SetCardreaderModule(&modCardreader, &SDCardDetect);
 
     modRFID.SetDriver(GetRFIDDriver());
     modRFID.SetLed(&RFIDCardDetect);
 
+    modCardreader.SetDriver(GetCardDriver());
+    modCardreader.SetCDButton(&carddetectBtn);
+
 
     /*start modules*/
+    modMusicbox.Start();
     modInput.Start();
     modRFID.Start();
-    modMusicbox.Start();
+    modCardreader.Start();
 
     /*
      * Activates the USB driver and then the USB bus pull-up on D+.

@@ -237,4 +237,9 @@ MFRC522Driver* GetRFIDDriver(void)
     return &RFID1;
 }
 
+SDCDriver* GetCardDriver(void)
+{
+    return &SDCD1;
+}
+
 /** @} */
