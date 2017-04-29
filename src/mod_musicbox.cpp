@@ -19,7 +19,7 @@
 #include "ff.h"
 #include "mod_rfid.h"
 #include "mod_cardreader.h"
-//#include "mod_musicplayer.h"
+#include "mod_player.h"
 
 #define EVENTMASK_RFID EVENT_MASK(0)
 #define EVENTMASK_BTN_PLAY EVENT_MASK(1)
@@ -32,10 +32,7 @@
 namespace tmb_musicplayer
 {
 
-ModuleMusicbox::ModuleMusicbox() :
-        m_modRFID(NULL),
-        m_modCardreader(NULL),
-        m_cardDetectLED(NULL)
+ModuleMusicbox::ModuleMusicbox()
 {
     //buttons[0].button = cfgp->btnPlay;
     buttons[Play].handler = &ModuleMusicbox::OnPlayButton;
@@ -90,11 +87,6 @@ void ModuleMusicbox::ThreadMain()
         m_modCardreader->RegisterListener(&cardreaderEvtListener, EVENTMASK_CARDREADER);
     }
 
-//
-//   chEvtRegisterMaskWithFlags(mod_cardreader_eventscource(), &cardreaderEvtListener,
-//               EVENTMASK_CARDREADER,
-//               CARDREADER_EVENT_MOUNTED | CARDREADER_EVENT_UNMOUNTED);
-
     RegisterButtonEvents();
 
 
@@ -112,24 +104,6 @@ void ModuleMusicbox::ThreadMain()
             eventflags_t flags = cardreaderEvtListener.getAndClearFlags();
             OnCardReaderEvent(flags);
         }
-//
-//        if (evt & EVENTMASK_CARDREADER)
-//        {
-//            eventflags_t flags = chEvtGetAndClearFlags(&cardreaderEvtListener);
-//
-//            if (flags & CARDREADER_EVENT_MOUNTED)
-//            {
-//                if (modMusicBoxData.hasRFIDCard == true)
-//                {
-//                    ProcessMifareUID(&modMusicBoxData.uid);
-//                }
-//            }
-//
-//            if (flags & CARDREADER_EVENT_UNMOUNTED)
-//            {
-//                mod_musicplayer_cmdStop();
-//            }
-//        }
 
         /* process buttons */
         int i;
@@ -187,7 +161,7 @@ void ModuleMusicbox::OnPlayButton(Button* btn, eventflags_t flags)
     (void)btn;
     if (flags & Button::Up)
     {
-        //mod_musicplayer_cmdToggle();
+        m_modPlayer->Toggle();
     }
 }
 void ModuleMusicbox::OnNextButton(Button* btn, eventflags_t flags)
@@ -195,7 +169,7 @@ void ModuleMusicbox::OnNextButton(Button* btn, eventflags_t flags)
     (void)btn;
     if (flags & Button::Pressed)
     {
-        //mod_musicplayer_cmdNext();
+        m_modPlayer->Next();
     }
 }
 
@@ -204,7 +178,7 @@ void ModuleMusicbox::OnPrevButton(Button* btn, eventflags_t flags)
     (void)btn;
     if (flags & Button::Pressed)
     {
-        //mod_musicplayer_cmdPrev();
+        m_modPlayer->Prev();
     }
 }
 
@@ -240,7 +214,7 @@ void ModuleMusicbox::OnRFIDEvent(eventflags_t flags)
     if (flags & ModuleRFID::CardLost)
     {
         hasRFIDCard = false;
-        //mod_musicplayer_cmdStop();
+        m_modPlayer->Stop();
     }
 }
 
@@ -299,7 +273,7 @@ void ModuleMusicbox::ProcessMifareUID(const MifareUID& uid)
                 strcat(absoluteFileNameBuffer, "/music/");
                 strcat(absoluteFileNameBuffer, fileInfo.lfname);
 
-                //mod_musicplayer_cmdPlay(absoluteFileNameBuffer);
+                m_modPlayer->Play(absoluteFileNameBuffer);
             }
         }
 
@@ -347,6 +321,11 @@ size_t ModuleMusicbox::MifareUIDToString(const MifareUID& uid, char* psz)
 void ModuleMusicbox::SetRFIDModule(ModuleRFID* module)
 {
     m_modRFID = module;
+}
+
+void ModuleMusicbox::SetPlayerModule(class ModulePlayer* module)
+{
+    m_modPlayer = module;
 }
 
 void ModuleMusicbox::SetCardreaderModule(ModuleCardreader* module, Led* led)

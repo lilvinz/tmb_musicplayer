@@ -6,4 +6,5 @@ PROJECT_CPPSRC = $(PRJ_SRC)/button.cpp \
 	$(PRJ_SRC)/mod_input.cpp \
 	$(PRJ_SRC)/mod_rfid.cpp \
 	$(PRJ_SRC)/mod_cardreader.cpp \
+	$(PRJ_SRC)/mod_player.cpp \
 	$(PRJ_SRC)/mod_musicbox.cpp

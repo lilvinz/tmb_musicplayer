@@ -40,13 +40,13 @@ public:
 
     virtual void Start()
     {
-        thread.SetModule(this);
-        thread.start(GetThreadPrio());
+        m_moduleThread.SetModule(this);
+        m_moduleThread.start(GetThreadPrio());
     }
 
     virtual void Shutdown()
     {
-        thread.requestTerminate();
+        m_moduleThread.requestTerminate();
     }
 
 protected:
@@ -78,8 +78,7 @@ protected:
         Module* module;
     };
 
-private:
-    ModuleThread thread;
+    ModuleThread m_moduleThread;
 };
 
 }

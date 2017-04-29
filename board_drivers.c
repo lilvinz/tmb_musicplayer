@@ -12,7 +12,7 @@
 
 #include "usbcfg.h"
 #include "mfrc522.h"
-#include "vs1053.h"
+
 
 #include "ws281x.h"
 #include "ledconf.h"
@@ -240,6 +240,11 @@ MFRC522Driver* GetRFIDDriver(void)
 SDCDriver* GetCardDriver(void)
 {
     return &SDCD1;
+}
+
+VS1053Driver* GetCodecDriver(void)
+{
+    return &VS1053D1;
 }
 
 /** @} */

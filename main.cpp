@@ -30,6 +30,7 @@
 #include "mod_input.h"
 #include "mod_rfid.h"
 #include "mod_cardreader.h"
+#include "mod_player.h"
 #include "mod_musicbox.h"
 
 #include "mfrc522.h"
@@ -48,6 +49,7 @@ static Button* buttons[] = {&playBtn, &nextBtn, &prevBtn, &volupBtn, &voldownBtn
 static ModuleInput modInput(buttons, 6);
 static ModuleRFID modRFID;
 static ModuleCardreader modCardreader;
+static ModulePlayer modPlayer;
 static ModuleMusicbox modMusicbox;
 
 static Led SDCardReadLed;
@@ -104,6 +106,7 @@ int main(void)
     modMusicbox.SetButton(ModuleMusicbox::VolUp, &volupBtn);
     modMusicbox.SetButton(ModuleMusicbox::VolDown, &voldownBtn);
     modMusicbox.SetRFIDModule(&modRFID);
+    modMusicbox.SetPlayerModule(&modPlayer);
     modMusicbox.SetCardreaderModule(&modCardreader, &SDCardDetect);
 
     modRFID.SetDriver(GetRFIDDriver());
@@ -112,12 +115,16 @@ int main(void)
     modCardreader.SetDriver(GetCardDriver());
     modCardreader.SetCDButton(&carddetectBtn);
 
+    modPlayer.SetDecoder(GetCodecDriver());
+    modPlayer.SetLED(&SDCardReadLed, &CodecDecodeLed);
+
 
     /*start modules*/
     modMusicbox.Start();
     modInput.Start();
     modRFID.Start();
     modCardreader.Start();
+    modPlayer.Start();
 
     /*
      * Activates the USB driver and then the USB bus pull-up on D+.

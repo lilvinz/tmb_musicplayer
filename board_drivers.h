@@ -10,6 +10,7 @@
 
 #include "hal.h"
 #include "mfrc522.h"
+#include "vs1053.h"
 
 /*===========================================================================*/
 /* Constants.                                                                */
@@ -38,6 +39,7 @@ void BoardDriverShutdown(void);
 void GetLedConfig(int16_t ledid, LEDPinConfig* pconfig);
 MFRC522Driver* GetRFIDDriver(void);
 SDCDriver* GetCardDriver(void);
+VS1053Driver* GetCodecDriver(void);
 
 #ifdef __cplusplus
 }

@@ -63,6 +63,7 @@ public:
 
     void SetButton(ButtonType type, Button* button);
     void SetRFIDModule(class ModuleRFID* module);
+    void SetPlayerModule(class ModulePlayer* module);
     void SetCardreaderModule(class ModuleCardreader* module, class Led* led);
 
 protected:
@@ -110,8 +111,9 @@ private:
     char absoluteFileNameBuffer[1024];
     char fileNameBuffer[512];
 
-    class ModuleRFID* m_modRFID;
-    class ModuleCardreader* m_modCardreader;
+    class ModuleRFID* m_modRFID = NULL;
+    class ModuleCardreader* m_modCardreader = NULL;
+    class ModulePlayer* m_modPlayer = NULL;
 
     class Led* m_cardDetectLED;
 };
