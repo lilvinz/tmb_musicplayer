@@ -19,6 +19,8 @@
 #define TMB_LED_CODECDECODE 2
 #define TMB_LED_RFIDDETECT 3
 #define TMB_LED_SDCARDDETECT 4
+#define TMB_LED_HEARTBEAT 5
+#define TMB_LED_SPARE 6
 /*===========================================================================*/
 /* Module pre-compile time settings.                                         */
 /*===========================================================================*/

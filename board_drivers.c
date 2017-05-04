@@ -112,6 +112,10 @@ static MFRC522Config RFID1_cfg =
 
 void BoardDriverInit(void)
 {
+    /*LED pin configurations*/
+    palSetPadMode(GPIOD, 0U, PAL_STM32_MODE_OUTPUT | PAL_STM32_PUPDR_FLOATING | PAL_STM32_OSPEED_HIGHEST );
+    palSetPadMode(GPIOD, 1U, PAL_STM32_MODE_OUTPUT | PAL_STM32_PUPDR_FLOATING| PAL_STM32_OSPEED_HIGHEST );
+
     /*vs1053 pin configuratio*/
     palSetPadMode(GPIOB, GPIOB_PIN13, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_LOWEST );
     palSetPadMode(GPIOB, GPIOB_PIN14, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_LOWEST);
@@ -125,12 +129,12 @@ void BoardDriverInit(void)
     /*SDIO Card detection pin*/
     palSetPadMode(GPIOA, 15U, PAL_MODE_INPUT_PULLUP);
     /*SDIO Configuration*/
-    palSetPadMode(GPIOC, 8U, PAL_MODE_ALTERNATE(12));
-    palSetPadMode(GPIOC, 9U, PAL_MODE_ALTERNATE(12));
-    palSetPadMode(GPIOC, 10U, PAL_MODE_ALTERNATE(12));
-    palSetPadMode(GPIOC, 11U, PAL_MODE_ALTERNATE(12));
-    palSetPadMode(GPIOC, 12U, PAL_MODE_ALTERNATE(12));
-    palSetPadMode(GPIOD, 2U, PAL_MODE_ALTERNATE(12));
+    palSetPadMode(GPIOC, 8U, PAL_MODE_ALTERNATE(12) | PAL_STM32_OSPEED_HIGHEST);
+    palSetPadMode(GPIOC, 9U, PAL_MODE_ALTERNATE(12)| PAL_STM32_OSPEED_HIGHEST);
+    palSetPadMode(GPIOC, 10U, PAL_MODE_ALTERNATE(12)| PAL_STM32_OSPEED_HIGHEST);
+    palSetPadMode(GPIOC, 11U, PAL_MODE_ALTERNATE(12)| PAL_STM32_OSPEED_HIGHEST);
+    palSetPadMode(GPIOC, 12U, PAL_MODE_ALTERNATE(12)| PAL_STM32_OSPEED_HIGHEST);
+    palSetPadMode(GPIOD, 2U, PAL_MODE_ALTERNATE(12)| PAL_STM32_OSPEED_HIGHEST);
 
     /*mfrc522 cs pins*/
     palSetPadMode(GPIOC, GPIOC_PIN4, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_LOWEST | PAL_STM32_PUPDR_FLOATING);
@@ -187,22 +191,32 @@ void GetLedConfig(int16_t ledid, LEDPinConfig* pconfig)
     {
     case TMB_LED_SDCARDREAD:
         pconfig->gpio = GPIOD;
-        pconfig->pin = GPIOD_LED5;
+        pconfig->pin = 13U;
         pconfig->clearOn = false;
         break;
     case TMB_LED_CODECDECODE:
         pconfig->gpio = GPIOD;
-        pconfig->pin = GPIOD_LED6;
+        pconfig->pin = 14U;
         pconfig->clearOn = false;
         break;
     case TMB_LED_RFIDDETECT:
         pconfig->gpio = GPIOD;
-        pconfig->pin = GPIOD_LED3;
+        pconfig->pin = 15U;
         pconfig->clearOn = false;
         break;
     case TMB_LED_SDCARDDETECT:
         pconfig->gpio = GPIOD;
-        pconfig->pin = GPIOD_LED4;
+        pconfig->pin = 12U;
+        pconfig->clearOn = false;
+        break;
+    case TMB_LED_HEARTBEAT:
+        pconfig->gpio = GPIOD;
+        pconfig->pin = 1U;
+        pconfig->clearOn = false;
+        break;
+    case TMB_LED_SPARE:
+        pconfig->gpio = GPIOD;
+        pconfig->pin = 0U;
         pconfig->clearOn = false;
         break;
     }

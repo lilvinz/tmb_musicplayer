@@ -70,7 +70,7 @@ void ModuleCardreader::ThreadMain()
     chibios_rt::EvtListener carddetectEvtListener;
     m_carddetectButton->RegisterListener(&carddetectEvtListener, EVENT_MASK(0));
 
-    if (m_carddetectButton->GetState() == false)
+    //if (m_carddetectButton->GetState() == false)
     {
         OnCardInserted();
     }

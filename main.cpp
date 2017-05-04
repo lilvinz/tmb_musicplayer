@@ -56,6 +56,8 @@ static Led SDCardReadLed;
 static Led SDCardDetect;
 static Led CodecDecodeLed;
 static Led RFIDCardDetect;
+static Led HeartBeat;
+static Led LEDSpare;
 
 void InitLED(int16_t ledId, Led& led)
 {
@@ -94,6 +96,8 @@ int main(void)
     InitLED(TMB_LED_SDCARDDETECT, SDCardDetect);
     InitLED(TMB_LED_CODECDECODE, CodecDecodeLed);
     InitLED(TMB_LED_RFIDDETECT, RFIDCardDetect);
+    InitLED(TMB_LED_HEARTBEAT, HeartBeat);
+    InitLED(TMB_LED_SPARE, LEDSpare);
 
     BoardDriverInit();
 
@@ -138,7 +142,7 @@ int main(void)
 
 
     /*play file from start*/
-    //mod_musicplayer_cmdPlay("/music/rock_pop");
+    //modPlayer.Play("/music/rock_pop");
 
 
     /*
@@ -147,6 +151,7 @@ int main(void)
      */
     while (TRUE)
     {
+        HeartBeat.Toggle();
         chibios_rt::BaseThread::sleep(MS2ST(500));
     }
 }
