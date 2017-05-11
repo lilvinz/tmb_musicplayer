@@ -4,9 +4,6 @@
 [submodule "submodules/ws281x"]
 	path = submodules/ws281x
 	url = git@github.com:janfietz/ws281x.git
-[submodule "submodules/chibios"]
-	path = submodules/chibios
-	url = https://github.com/ChibiOS/ChibiOS.git
 [submodule "submodules/flashtool"]
 	path = submodules/flashtool
 	url = https://github.com/lilvinz/flashtool.git
