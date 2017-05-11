@@ -1,9 +1,24 @@
-[submodule "submodules/ChibiOS"]
-	path = submodules/ChibiOS
-	url = git@github.com:ChibiOS/ChibiOS.git
 [submodule "submodules/mfrc522"]
 	path = submodules/mfrc522
 	url = git@github.com:janfietz/mfrc522.git
 [submodule "submodules/ws281x"]
 	path = submodules/ws281x
 	url = git@github.com:janfietz/ws281x.git
+[submodule "submodules/chibios"]
+	path = submodules/chibios
+	url = https://github.com/ChibiOS/ChibiOS.git
+[submodule "submodules/flashtool"]
+	path = submodules/flashtool
+	url = https://github.com/lilvinz/flashtool.git
+[submodule "submodules/qos"]
+	path = submodules/qos
+	url = https://github.com/lilvinz/qos.git
+[submodule "submodules/format"]
+	path = submodules/format
+	url = https://github.com/lilvinz/format.git
+[submodule "submodules/fatfs"]
+	path = submodules/fatfs
+	url = https://github.com/lilvinz/fatfs.git
+[submodule "submodules/minini"]
+	path = submodules/minini
+	url = https://github.com/lilvinz/minini.git
