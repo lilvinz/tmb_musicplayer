@@ -10,18 +10,21 @@
 
 #if MOD_RFID
 
+#include "ch_tools.h"
+#include "watchdog.h"
+#include "module_init_cpp.h"
+
+#include "qhal.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
 
-#include "ch.h"
-#include "targetconf.h"
-#include "chprintf.h"
-
-
 namespace tmb_musicplayer
 {
+
+ModuleRFID ModuleRFID::modInstance = ModuleRFID();
 /**
  * @brief
  */
@@ -30,10 +33,20 @@ namespace tmb_musicplayer
 
 ModuleRFID::ModuleRFID() :
         m_detectedCard(false),
-        m_mfrcDriver(NULL),
-        m_detectLed(NULL)
+        m_mfrcDriver(NULL)
 {
 
+}
+
+ModuleRFID::~ModuleRFID()
+{
+
+}
+
+void ModuleRFID::Init()
+{
+    m_mfrcDriver = &RFID1;
+    watchdog_register(WATCHDOG_MOD_RFID);
 }
 
 void ModuleRFID::Start()
@@ -50,17 +63,6 @@ void ModuleRFID::Shutdown()
     BaseClass::Shutdown();
 
     m_mfrcDriver = NULL;
-    m_detectLed = NULL;
-}
-
-void ModuleRFID::SetDriver(MFRC522Driver* driver)
-{
-    m_mfrcDriver = driver;
-}
-
-void ModuleRFID::SetLed(Led* led)
-{
-    m_detectLed = led;
 }
 
 void ModuleRFID::RegisterListener(chibios_rt::EvtListener* listener, eventmask_t mask)
@@ -97,6 +99,7 @@ void ModuleRFID::ThreadMain()
     SetCardDetectLed(false);
     while (!chThdShouldTerminateX())
     {
+        watchdog_reload(WATCHDOG_MOD_RFID);
         bool lastDetectState = m_detectedCard;
         m_mutex.lock();
         MIFARE_Status_t status = MifareCheck(m_mfrcDriver, &m_cardID);
@@ -131,20 +134,22 @@ void ModuleRFID::ThreadMain()
 
 void ModuleRFID::SetCardDetectLed(bool on)
 {
-    if (m_detectLed != NULL)
+#if HAL_USE_LED
+    if (on == true)
     {
-        if (on == true)
-        {
-            m_detectLed->On();
-        }
-        else
-        {
-            m_detectLed->Off();
-        }
+        ledOn(LED_CARDDETECT);
     }
+    else
+    {
+        ledOff(LED_CARDDETECT);
+    }
+#endif /* HAL_USE_LED */
+
 }
 
 }
+
+MODULE_INITCALL(1, qos::ModuleInit<tmb_musicplayer::ModuleRFID>::Init, qos::ModuleInit<tmb_musicplayer::ModuleRFID>::Start, qos::ModuleInit<tmb_musicplayer::ModuleRFID>::Shutdown)
 
 #endif
 /** @} */
