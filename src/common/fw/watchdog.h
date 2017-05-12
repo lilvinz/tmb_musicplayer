@@ -19,6 +19,7 @@
 enum watchdog_source
 {
     WATCHDOG_MOD_TEST,
+    WATCHDOG_MOD_RFID,
 };
 
 #ifdef __cplusplus
