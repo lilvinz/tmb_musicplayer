@@ -19,3 +19,6 @@
 [submodule "submodules/minini"]
 	path = submodules/minini
 	url = https://github.com/lilvinz/minini.git
+[submodule "submodules/chibios"]
+	path = submodules/chibios
+	url = git@github.com:lilvinz/chibios.git
