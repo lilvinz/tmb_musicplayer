@@ -30,6 +30,13 @@
 
 /* List modules here. */
 #define MOD_TEST_CPP                TRUE
+#define MOD_MUSICBOX                FALSE
+#define MOD_PLAYER                  FALSE
+#define MOD_RFID                    TRUE
+#define MOD_INPUT                   FALSE
+#define MOD_EFFECTS                 FALSE
+#define MOD_CARDREADER              FALSE
+
 
 #define DEBUG_CANNEL (BaseSequentialStream *)&SD6
 
