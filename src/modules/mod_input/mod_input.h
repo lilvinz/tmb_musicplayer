@@ -11,11 +11,10 @@
 
 #include "target_cfg.h"
 #include "threadedmodule.h"
+#include "singleton.h"
 
 #if MOD_INPUT
 
-#include "hal.h"
-#include "module.h"
 #include "button.h"
 
 /*===========================================================================*/
@@ -43,24 +42,28 @@
 namespace tmb_musicplayer
 {
 
-class ModuleInput : public Module<MOD_INPUT_THREADSIZE>
+class ModuleInput : public qos::ThreadedModule<MOD_INPUT_THREADSIZE>
 {
 public:
-    ModuleInput(Button** btns, size_t count);
+    ModuleInput();
+    ~ModuleInput();
 
+    virtual void Init();
     virtual void Start();
     virtual void Shutdown();
 
 protected:
-    typedef Module<MOD_INPUT_THREADSIZE> BaseClass;
-
-    virtual void ThreadMain();
+    typedef qos::ThreadedModule<MOD_INPUT_THREADSIZE> BaseClass;
 
     virtual tprio_t GetThreadPrio() const {return MOD_INPUT_THREADPRIO;}
+    virtual void ThreadMain();
+
 private:
     Button** buttons;
     size_t buttonCount;
 };
+
+typedef qos::Singleton<ModuleInput> ModuleInputSingeton;
 
 }
 

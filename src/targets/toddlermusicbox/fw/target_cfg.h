@@ -33,7 +33,7 @@
 #define MOD_MUSICBOX                FALSE
 #define MOD_PLAYER                  FALSE
 #define MOD_RFID                    TRUE
-#define MOD_INPUT                   FALSE
+#define MOD_INPUT                   TRUE
 #define MOD_EFFECTS                 FALSE
 #define MOD_CARDREADER              FALSE
 

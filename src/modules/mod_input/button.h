@@ -1,5 +1,6 @@
+
 /**
- * @file    src/button.h
+* @file    button.h
  * @brief
  *
  * @addtogroup
@@ -10,7 +11,7 @@
 #define _BUTTON_H_
 
 #include "ch.hpp"
-#include "hal.h"
+#include "qhal.h"
 
 
 namespace tmb_musicplayer

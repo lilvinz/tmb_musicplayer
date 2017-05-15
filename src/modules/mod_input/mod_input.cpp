@@ -10,13 +10,37 @@
 
 #if MOD_INPUT
 
+#include "ch_tools.h"
+#include "watchdog.h"
+#include "module_init_cpp.h"
+
+#include "qhal.h"
+#include "board_buttons.h"
+
+template <>
+tmb_musicplayer::ModuleInput tmb_musicplayer::ModuleInputSingeton::instance = tmb_musicplayer::ModuleInput();
+
 namespace tmb_musicplayer
 {
-ModuleInput::ModuleInput(Button** btns, size_t count) :
-    buttons(btns),
-    buttonCount(count)
+
+
+
+ModuleInput::ModuleInput()
 {
 
+}
+
+ModuleInput::~ModuleInput()
+{
+
+}
+
+
+void ModuleInput::Init()
+{
+    watchdog_register(WATCHDOG_MOD_INPUT);
+    buttons = BoardButtons::Buttons;
+    buttonCount = sizeof(BoardButtons::Buttons)/sizeof(BoardButtons::Buttons[0]);
 }
 
 void ModuleInput::Start()
@@ -42,6 +66,7 @@ void ModuleInput::ThreadMain()
 
     while (!chibios_rt::BaseThread::shouldTerminate())
     {
+        watchdog_reload(WATCHDOG_MOD_INPUT);
         Button** btn = buttons;
         systime_t now = chVTGetSystemTimeX();
 
@@ -55,6 +80,9 @@ void ModuleInput::ThreadMain()
 }
 
 }
+MODULE_INITCALL(0, qos::ModuleInit<tmb_musicplayer::ModuleInputSingeton>::Init,
+        qos::ModuleInit<tmb_musicplayer::ModuleInputSingeton>::Start,
+        qos::ModuleInit<tmb_musicplayer::ModuleInputSingeton>::Shutdown)
 
 #endif /* MOD_INPUT */
 
