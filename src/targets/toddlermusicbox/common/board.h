@@ -651,10 +651,10 @@
                                      PIN_MODE_INPUT(GPIOD_OVER_CURRENT) |   \
                                      PIN_MODE_INPUT(GPIOD_PIN6) |           \
                                      PIN_MODE_INPUT(GPIOD_PIN7) |           \
-                                     PIN_MODE_INPUT(GPIOD_PIN8) |           \
+                                     PIN_MODE_OUTPUT(GPIOD_PIN8) |          \
                                      PIN_MODE_INPUT(GPIOD_PIN9) |           \
                                      PIN_MODE_INPUT(GPIOD_PIN10) |          \
-                                     PIN_MODE_INPUT(GPIOD_PIN11) |          \
+                                     PIN_MODE_OUTPUT(GPIOD_PIN11) |         \
                                      PIN_MODE_OUTPUT(GPIOD_LED4) |          \
                                      PIN_MODE_OUTPUT(GPIOD_LED3) |          \
                                      PIN_MODE_OUTPUT(GPIOD_LED5) |          \
@@ -699,10 +699,10 @@
                                      PIN_PUPDR_FLOATING(GPIOD_OVER_CURRENT) |\
                                      PIN_PUPDR_PULLUP(GPIOD_PIN6) |         \
                                      PIN_PUPDR_PULLUP(GPIOD_PIN7) |         \
-                                     PIN_PUPDR_PULLUP(GPIOD_PIN8) |         \
+                                     PIN_PUPDR_FLOATING(GPIOD_PIN8) |         \
                                      PIN_PUPDR_PULLUP(GPIOD_PIN9) |         \
                                      PIN_PUPDR_PULLUP(GPIOD_PIN10) |        \
-                                     PIN_PUPDR_PULLUP(GPIOD_PIN11) |        \
+                                     PIN_PUPDR_FLOATING(GPIOD_PIN11) |        \
                                      PIN_PUPDR_FLOATING(GPIOD_LED4) |       \
                                      PIN_PUPDR_FLOATING(GPIOD_LED3) |       \
                                      PIN_PUPDR_FLOATING(GPIOD_LED5) |       \

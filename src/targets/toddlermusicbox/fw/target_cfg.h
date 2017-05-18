@@ -40,6 +40,6 @@
 #define MOD_CARDREADER              TRUE
 
 
-#define DEBUG_CANNEL (BaseSequentialStream *)&SD2
+#define DEBUG_CANNEL (BaseSequentialStream *)&SD6
 
 #endif /* TARGET_CFG_H */
