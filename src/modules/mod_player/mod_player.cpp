@@ -22,7 +22,7 @@
 #include <stdlib.h>
 
 template <>
-tmb_musicplayer::ModulePlayer tmb_musicplayer::ModulePlayerSingeton::instance = tmb_musicplayer::ModulePlayer();
+tmb_musicplayer::ModulePlayer tmb_musicplayer::ModulePlayerSingelton::instance = tmb_musicplayer::ModulePlayer();
 
 #define EVENTMASK_COMMANDS EVENT_MASK(0)
 #define EVENTMASK_CODEC EVENT_MASK(1)
@@ -545,9 +545,9 @@ void ModulePlayer::PumpThread::main()
 
 }
 
-MODULE_INITCALL(0, qos::ModuleInit<tmb_musicplayer::ModulePlayerSingeton>::Init,
-        qos::ModuleInit<tmb_musicplayer::ModulePlayerSingeton>::Start,
-        qos::ModuleInit<tmb_musicplayer::ModulePlayerSingeton>::Shutdown)
+MODULE_INITCALL(4, qos::ModuleInit<tmb_musicplayer::ModulePlayerSingelton>::Init,
+        qos::ModuleInit<tmb_musicplayer::ModulePlayerSingelton>::Start,
+        qos::ModuleInit<tmb_musicplayer::ModulePlayerSingelton>::Shutdown)
 
 #endif /* MOD_PLAYER */
 /** @} */

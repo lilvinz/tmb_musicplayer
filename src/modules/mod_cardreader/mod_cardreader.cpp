@@ -30,7 +30,7 @@
 #endif
 
 template <>
-tmb_musicplayer::ModuleCardreader tmb_musicplayer::ModuleCardreaderSingeton::instance = tmb_musicplayer::ModuleCardreader();
+tmb_musicplayer::ModuleCardreader tmb_musicplayer::ModuleCardreaderSingelton::instance = tmb_musicplayer::ModuleCardreader();
 
 namespace tmb_musicplayer
 {
@@ -116,6 +116,8 @@ void ModuleCardreader::OnCardRemoved()
     UnmountFilesystem();
 
     m_evtSource.broadcastFlags(FilesystemUnmounted);
+
+    SetCardDetectLed(false);
 }
 
 void ModuleCardreader::OnCardInserted()
@@ -125,6 +127,7 @@ void ModuleCardreader::OnCardInserted()
     if (MountFilesystem() == true)
     {
         m_evtSource.broadcastFlags(FilesystemMounted);
+        SetCardDetectLed(true);
     }
 }
 
@@ -163,6 +166,21 @@ bool ModuleCardreader::UnmountFilesystem()
 
     chprintf(DEBUG_CANNEL, "FS: f_mount() unmount succeeded\r\n");
     return true;
+}
+
+void ModuleCardreader::SetCardDetectLed(bool on)
+{
+#if HAL_USE_LED
+    if (on == true)
+    {
+        ledOn(LED_CARDDETECT);
+    }
+    else
+    {
+        ledOff(LED_CARDDETECT);
+    }
+#endif /* HAL_USE_LED */
+
 }
 
 
@@ -233,9 +251,9 @@ const char* ModuleCardreader::FilesystemResultToString(FRESULT stat)
 
 }
 
-MODULE_INITCALL(0, qos::ModuleInit<tmb_musicplayer::ModuleCardreaderSingeton>::Init,
-        qos::ModuleInit<tmb_musicplayer::ModuleCardreaderSingeton>::Start,
-        qos::ModuleInit<tmb_musicplayer::ModuleCardreaderSingeton>::Shutdown)
+MODULE_INITCALL(3, qos::ModuleInit<tmb_musicplayer::ModuleCardreaderSingelton>::Init,
+        qos::ModuleInit<tmb_musicplayer::ModuleCardreaderSingelton>::Start,
+        qos::ModuleInit<tmb_musicplayer::ModuleCardreaderSingelton>::Shutdown)
 
 #endif /* MOD_CARDREADER */
 /** @} */

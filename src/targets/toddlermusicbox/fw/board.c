@@ -117,6 +117,10 @@ void boardInit(void)
 #endif /* STM32_BKPRAM_ENABLE */
 #endif /* HAL_USE_NVM_MEMORY */
 
+#if HAL_USE_SERIAL
+    sdInit();
+#endif /* HAL_USE_SERIAL */
+
 #if HAL_USE_WS281X
     ws281xObjectInit(&ws281x);
 #endif /* HAL_USE_WS281X */
@@ -154,11 +158,24 @@ void boardStart(void)
     ledStart(&LED6, &led_6_cfg);
 #endif /* HAL_USE_LED */
 
+#if HAL_USE_SERIAL
+    sdStart(&SD2,NULL);
+#endif /* HAL_USE_SERIAL */
+
 #if HAL_USE_WS281X
     ws281xStart(&ws281x, &ws281x_cfg);
 #endif /* HAL_USE_WS281X */
 
 #if HAL_USE_VS1053
+    /*vs1053 pin configuratio*/
+    palSetPadMode(GPIOB, GPIOB_PIN13, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_LOWEST );
+    palSetPadMode(GPIOB, GPIOB_PIN14, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_LOWEST);
+    palSetPadMode(GPIOB, GPIOB_PIN15, PAL_MODE_ALTERNATE(5) | PAL_STM32_OSPEED_LOWEST);
+    palSetPadMode(GPIOD, 8U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_LOWEST | PAL_STM32_PUPDR_FLOATING);
+    palSetPadMode(GPIOD, 10U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_LOWEST | PAL_STM32_PUPDR_FLOATING);
+    palSetPadMode(GPIOD, 11U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_LOWEST | PAL_STM32_PUPDR_FLOATING);
+    palSetPadMode(GPIOC, 14U, PAL_MODE_OUTPUT_PUSHPULL | PAL_STM32_OSPEED_LOWEST | PAL_STM32_PUPDR_FLOATING);
+    palSetPadMode(GPIOD, 9U, PAL_MODE_INPUT_PULLUP);
     VS1053Start(&VS1053D1, &VS1053D1_cfg);
 #endif /* HAL_USE_VS1053 */
 
@@ -249,6 +266,10 @@ void boardStop(void)
 #if HAL_USE_WS281X
     ws281xStop(&ws281x);
 #endif /* HAL_USE_WS281X */
+
+#if HAL_USE_SERIAL
+    sdStop(&SD2);
+#endif /* HAL_USE_SERIAL */
 
     /* Stop status LED driver */
 #if HAL_USE_LED

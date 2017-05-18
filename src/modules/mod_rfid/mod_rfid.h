@@ -11,6 +11,7 @@
 
 #include "target_cfg.h"
 #include "threadedmodule.h"
+#include "singleton.h"
 
 #if MOD_RFID
 
@@ -58,11 +59,6 @@ public:
     virtual void Start();
     virtual void Shutdown();
 
-    static ModuleRFID* GetInstance()
-    {
-        return &modInstance;
-    }
-
     void RegisterListener(chibios_rt::EvtListener* listener, eventmask_t mask);
     void UnregisterListener(chibios_rt::EvtListener* listener);
 
@@ -76,7 +72,7 @@ protected:
 
 
 private:
-    void SetCardDetectLed(bool on);
+    void SetRFIDDetectLed(bool on);
 
     bool m_detectedCard;
     MFRC522Driver* m_mfrcDriver;
@@ -84,10 +80,8 @@ private:
 
     chibios_rt::EvtSource m_evtSource;
     chibios_rt::Mutex m_mutex;
-
-    static ModuleRFID modInstance;
 };
-
+typedef qos::Singleton<ModuleRFID> ModuleRFIDSingelton;
 }
 
 #endif

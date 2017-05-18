@@ -70,13 +70,15 @@ private:
     bool UnmountFilesystem();
     bool MountFilesystem();
 
+    void SetCardDetectLed(bool on);
+
     static void PrintFilesystemError(BaseSequentialStream *chp, FRESULT err);
     static const char* FilesystemResultToString(FRESULT stat);
 
     chibios_rt::EvtSource m_evtSource;
     FATFS m_filesystem;
 };
-typedef qos::Singleton<ModuleCardreader> ModuleCardreaderSingeton;
+typedef qos::Singleton<ModuleCardreader> ModuleCardreaderSingelton;
 }
 
 #endif /* MOD_CARDREADER */

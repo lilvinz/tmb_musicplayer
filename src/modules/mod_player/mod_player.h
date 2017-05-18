@@ -26,7 +26,7 @@
 /* Module pre-compile time settings.                                         */
 /*===========================================================================*/
 #ifndef MOD_MUSICPLAYER_DATAPUMP_THREADSIZE
-#define MOD_MUSICPLAYER_DATAPUMP_THREADSIZE 1028
+#define MOD_MUSICPLAYER_DATAPUMP_THREADSIZE 2028
 #endif
 
 #ifndef MOD_MUSICPLAYER_DATAPUMP_THREADPRIO
@@ -157,7 +157,7 @@ private:
     chibios_rt::Mailbox<FileNameMsg*, MOD_PLAYER_CMD_QUEUE_SIZE> m_Mailbox;
 };
 
-typedef qos::Singleton<ModulePlayer> ModulePlayerSingeton;
+typedef qos::Singleton<ModulePlayer> ModulePlayerSingelton;
 
 }
 

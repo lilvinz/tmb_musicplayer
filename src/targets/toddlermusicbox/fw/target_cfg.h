@@ -32,7 +32,7 @@
 
 /* List modules here. */
 #define MOD_TEST_CPP                TRUE
-#define MOD_MUSICBOX                FALSE
+#define MOD_MUSICBOX                TRUE
 #define MOD_PLAYER                  TRUE
 #define MOD_RFID                    TRUE
 #define MOD_INPUT                   TRUE
@@ -40,6 +40,6 @@
 #define MOD_CARDREADER              TRUE
 
 
-#define DEBUG_CANNEL (BaseSequentialStream *)&SD6
+#define DEBUG_CANNEL (BaseSequentialStream *)&SD2
 
 #endif /* TARGET_CFG_H */

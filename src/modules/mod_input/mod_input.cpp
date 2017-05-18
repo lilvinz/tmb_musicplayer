@@ -80,7 +80,7 @@ void ModuleInput::ThreadMain()
 }
 
 }
-MODULE_INITCALL(0, qos::ModuleInit<tmb_musicplayer::ModuleInputSingeton>::Init,
+MODULE_INITCALL(2, qos::ModuleInit<tmb_musicplayer::ModuleInputSingeton>::Init,
         qos::ModuleInit<tmb_musicplayer::ModuleInputSingeton>::Start,
         qos::ModuleInit<tmb_musicplayer::ModuleInputSingeton>::Shutdown)
 

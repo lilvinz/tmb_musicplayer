@@ -11,14 +11,11 @@
 
 #include "target_cfg.h"
 #include "threadedmodule.h"
+#include "singleton.h"
 
 #if MOD_MUSICBOX
 
-
-#include "hal.h"
 #include "button.h"
-#include "module.h"
-
 #include "mfrc522.h"
 
 /*===========================================================================*/
@@ -29,7 +26,7 @@
 /* Module pre-compile time settings.                                         */
 /*===========================================================================*/
 #ifndef MOD_MUSICBOX_THREADSIZE
-#define MOD_MUSICBOX_THREADSIZE 640
+#define MOD_MUSICBOX_THREADSIZE 2024
 #endif
 
 #ifndef MOD_MUSICBOX_THREADPRIO
@@ -49,7 +46,7 @@ namespace tmb_musicplayer
  * @brief
  */
 
-class ModuleMusicbox : public Module<MOD_MUSICBOX_THREADSIZE>
+class ModuleMusicbox : public qos::ThreadedModule<MOD_MUSICBOX_THREADSIZE>
 {
 public:
     enum ButtonType
@@ -63,17 +60,14 @@ public:
     };
 
     ModuleMusicbox();
+    ~ModuleMusicbox();
 
+    virtual void Init();
     virtual void Start();
     virtual void Shutdown();
 
-    void SetButton(ButtonType type, Button* button);
-    void SetRFIDModule(class ModuleRFID* module);
-    void SetPlayerModule(class ModulePlayer* module);
-    void SetCardreaderModule(class ModuleCardreader* module, class Led* led);
-
 protected:
-    typedef Module<MOD_MUSICBOX_THREADSIZE> BaseClass;
+    typedef qos::ThreadedModule<MOD_MUSICBOX_THREADSIZE> BaseClass;
 
     virtual void ThreadMain();
 
@@ -101,18 +95,15 @@ private:
     void UnregisterButtonEvents();
 
     void ChangeVolume(int16_t diff);
-    void ProcessMifareUID(const MifareUID& uid);
+    void ProcessMifareUID(const char* pszUID);
 
     static size_t MifareUIDToString(const MifareUID& uid, char* psz);
 
-    bool hasRFIDCard;
-    int16_t volume;
+    bool hasRFIDCard = false;
+    int16_t volume = 50;
 
     ButtonData buttons[ButtonTypeCount];
     MifareUID uid;
-
-    chibios_rt::EvtListener rfidEvtListener;
-    chibios_rt::EvtListener cardreaderEvtListener;
 
     char absoluteFileNameBuffer[1024];
     char fileNameBuffer[512];
@@ -120,9 +111,8 @@ private:
     class ModuleRFID* m_modRFID = NULL;
     class ModuleCardreader* m_modCardreader = NULL;
     class ModulePlayer* m_modPlayer = NULL;
-
-    class Led* m_cardDetectLED;
 };
+typedef qos::Singleton<ModuleMusicbox> ModuleMusicboxSingelton;
 
 }
 

@@ -35,7 +35,7 @@
  * HAL driver system settings.
  */
 #define STM32_NO_INIT                       FALSE
-#define STM32_HSI_ENABLED                   FALSE
+#define STM32_HSI_ENABLED                   TRUE
 #define STM32_LSI_ENABLED                   TRUE
 #define STM32_HSE_ENABLED                   TRUE
 #define STM32_LSE_ENABLED                   FALSE
@@ -52,8 +52,8 @@
 #define STM32_RTCSEL                        STM32_RTCSEL_LSI
 #define STM32_RTCPRE_VALUE                  8
 /* Use lowest possible speeds also for unused clocks to save power. */
-#define STM32_MCO1SEL                       STM32_MCO1SEL_LSE
-#define STM32_MCO1PRE                       STM32_MCO1PRE_DIV5
+#define STM32_MCO1SEL                       STM32_MCO1SEL_HSI
+#define STM32_MCO1PRE                       STM32_MCO1PRE_DIV1
 #define STM32_MCO2SEL                       STM32_MCO2SEL_PLLI2S
 #define STM32_MCO2PRE                       STM32_MCO2PRE_DIV5
 #define STM32_I2SSRC                        STM32_I2SSRC_CKIN
@@ -251,7 +251,7 @@
 #define STM32_SERIAL_USE_USART3             FALSE
 #define STM32_SERIAL_USE_UART4              FALSE
 #define STM32_SERIAL_USE_UART5              FALSE
-#define STM32_SERIAL_USE_USART6             TRUE
+#define STM32_SERIAL_USE_USART6             FALSE
 #define STM32_SERIAL_USART1_PRIORITY        12
 #define STM32_SERIAL_USART2_PRIORITY        12
 #define STM32_SERIAL_USART3_PRIORITY        12
@@ -280,7 +280,7 @@
 #define STM32_SPI_SPI5_TX_DMA_STREAM        STM32_DMA_STREAM_ID(2, 4)
 #define STM32_SPI_SPI6_RX_DMA_STREAM        STM32_DMA_STREAM_ID(2, 5)
 #define STM32_SPI_SPI6_TX_DMA_STREAM        STM32_DMA_STREAM_ID(2, 6)
-#define STM32_SPI_SPI1_DMA_PRIORITY         1
+#define STM32_SPI_SPI1_DMA_PRIORITY         3
 #define STM32_SPI_SPI2_DMA_PRIORITY         1
 #define STM32_SPI_SPI3_DMA_PRIORITY         1
 #define STM32_SPI_SPI4_DMA_PRIORITY         1

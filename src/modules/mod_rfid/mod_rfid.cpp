@@ -20,11 +20,11 @@
 #include <string.h>
 #include <stdlib.h>
 
-
 namespace tmb_musicplayer
 {
+template <>
+ModuleRFID ModuleRFIDSingelton::instance = tmb_musicplayer::ModuleRFID();
 
-ModuleRFID ModuleRFID::modInstance = ModuleRFID();
 /**
  * @brief
  */
@@ -96,7 +96,7 @@ void ModuleRFID::ThreadMain()
 
     m_detectedCard = false;
 
-    SetCardDetectLed(false);
+    SetRFIDDetectLed(false);
     while (!chThdShouldTerminateX())
     {
         watchdog_reload(WATCHDOG_MOD_RFID);
@@ -115,7 +115,7 @@ void ModuleRFID::ThreadMain()
         {
             if (lastDetectState == false)
             {
-                SetCardDetectLed(true);
+                SetRFIDDetectLed(true);
                 m_evtSource.broadcastFlags(CardDetected);
             }
         }
@@ -123,7 +123,7 @@ void ModuleRFID::ThreadMain()
         {
           if (lastDetectState == true)
           {
-              SetCardDetectLed(false);
+              SetRFIDDetectLed(false);
               m_evtSource.broadcastFlags(CardLost);
           }
         }
@@ -132,16 +132,16 @@ void ModuleRFID::ThreadMain()
     }
 }
 
-void ModuleRFID::SetCardDetectLed(bool on)
+void ModuleRFID::SetRFIDDetectLed(bool on)
 {
 #if HAL_USE_LED
     if (on == true)
     {
-        ledOn(LED_CARDDETECT);
+        ledOn(LED_RFID);
     }
     else
     {
-        ledOff(LED_CARDDETECT);
+        ledOff(LED_RFID);
     }
 #endif /* HAL_USE_LED */
 
@@ -149,7 +149,9 @@ void ModuleRFID::SetCardDetectLed(bool on)
 
 }
 
-MODULE_INITCALL(1, qos::ModuleInit<tmb_musicplayer::ModuleRFID>::Init, qos::ModuleInit<tmb_musicplayer::ModuleRFID>::Start, qos::ModuleInit<tmb_musicplayer::ModuleRFID>::Shutdown)
+MODULE_INITCALL(1, qos::ModuleInit<tmb_musicplayer::ModuleRFIDSingelton>::Init,
+        qos::ModuleInit<tmb_musicplayer::ModuleRFIDSingelton>::Start,
+        qos::ModuleInit<tmb_musicplayer::ModuleRFIDSingelton>::Shutdown)
 
 #endif
 /** @} */
