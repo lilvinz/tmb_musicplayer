@@ -11,17 +11,11 @@
 
 #include "target_cfg.h"
 #include "threadedmodule.h"
+#include "singleton.h"
 
 #if MOD_CARDREADER
 
-#include "hal.h"
-#include "mod_led.h"
 #include "ff.h"
-#include "module.h"
-
-/*===========================================================================*/
-/* Module constants.                                                         */
-/*===========================================================================*/
 
 /*===========================================================================*/
 /* Module pre-compile time settings.                                         */
@@ -34,19 +28,13 @@
 #define MOD_CARDREADER_THREADPRIO LOWPRIO
 #endif
 
-/*===========================================================================*/
-/* Derived constants and error checks.                                       */
-/*===========================================================================*/
-
-/*===========================================================================*/
-/* Module data structures and types.                                         */
-/*===========================================================================*/
 namespace tmb_musicplayer
 {
 
-class ModuleCardreader : public Module<MOD_CARDREADER_THREADSIZE>
+class ModuleCardreader : public qos::ThreadedModule<MOD_CARDREADER_THREADSIZE>
 {
 public:
+
     enum EventsFlags
     {
         FilesystemMounted = 1 << 0,
@@ -54,12 +42,11 @@ public:
     };
 
     ModuleCardreader();
+    ~ModuleCardreader();
 
+    virtual void Init();
     virtual void Start();
     virtual void Shutdown();
-
-    void SetDriver(SDCDriver* driver);
-    void SetCDButton(class Button* btn);
 
     void RegisterListener(chibios_rt::EvtListener* listener, eventmask_t mask);
     void UnregisterListener(chibios_rt::EvtListener* listener);
@@ -69,7 +56,7 @@ public:
     bool CommandFind(DIR* dp, FILINFO* fno, const char* path, const char* pattern);
 
 protected:
-    typedef Module<MOD_CARDREADER_THREADSIZE> BaseClass;
+    typedef qos::ThreadedModule<MOD_CARDREADER_THREADSIZE> BaseClass;
 
     virtual void ThreadMain();
 
@@ -86,19 +73,11 @@ private:
     static void PrintFilesystemError(BaseSequentialStream *chp, FRESULT err);
     static const char* FilesystemResultToString(FRESULT stat);
 
-    class Button* m_carddetectButton;
-    SDCDriver* m_sdc;
     chibios_rt::EvtSource m_evtSource;
     FATFS m_filesystem;
 };
+typedef qos::Singleton<ModuleCardreader> ModuleCardreaderSingeton;
 }
-/*===========================================================================*/
-/* Module macros.                                                            */
-/*===========================================================================*/
-
-/*===========================================================================*/
-/* External declarations.                                                    */
-/*===========================================================================*/
 
 #endif /* MOD_CARDREADER */
 #endif /* _MOD_CARDREADER_H_ */

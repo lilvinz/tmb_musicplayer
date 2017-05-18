@@ -37,7 +37,7 @@
 #define MOD_RFID                    TRUE
 #define MOD_INPUT                   TRUE
 #define MOD_EFFECTS                 FALSE
-#define MOD_CARDREADER              FALSE
+#define MOD_CARDREADER              TRUE
 
 
 #define DEBUG_CANNEL (BaseSequentialStream *)&SD6

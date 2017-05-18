@@ -14,14 +14,23 @@
 #include <string.h>
 #include <stdlib.h>
 
-
-#include "ch.h"
-
+#include "ch_tools.h"
 #include "chprintf.h"
 
-#include "ff.h"
+#include "qhal.h"
+#include "module_init_cpp.h"
 
-#include "button.h"
+#include "watchdog.h"
+#include "board_buttons.h"
+
+
+#if HAL_USE_SDC
+#else
+#error "SDC driver must be specified"
+#endif
+
+template <>
+tmb_musicplayer::ModuleCardreader tmb_musicplayer::ModuleCardreaderSingeton::instance = tmb_musicplayer::ModuleCardreader();
 
 namespace tmb_musicplayer
 {
@@ -31,18 +40,24 @@ ModuleCardreader::ModuleCardreader()
 
 }
 
+ModuleCardreader::~ModuleCardreader()
+{
+
+}
+
+void ModuleCardreader::Init()
+{
+
+}
+
 void ModuleCardreader::Start()
 {
-    chDbgAssert(m_sdc != NULL, "No driver set!!");
     BaseClass::Start();
 }
 
 void ModuleCardreader::Shutdown()
 {
     BaseClass::Shutdown();
-
-    m_carddetectButton = NULL;
-    m_sdc = NULL;
 }
 
 void ModuleCardreader::RegisterListener(chibios_rt::EvtListener* listener, eventmask_t mask)
@@ -55,23 +70,16 @@ void ModuleCardreader::UnregisterListener(chibios_rt::EvtListener* listener)
     m_evtSource.unregister(listener);
 }
 
-void ModuleCardreader::SetDriver(SDCDriver* driver)
-{
-    m_sdc = driver;
-}
-
-void ModuleCardreader::SetCDButton(Button* btn)
-{
-    m_carddetectButton = btn;
-}
 
 void ModuleCardreader::ThreadMain()
 {
     chRegSetThreadName("cardReader");
 
     chibios_rt::EvtListener carddetectEvtListener;
-    m_carddetectButton->RegisterListener(&carddetectEvtListener, EVENT_MASK(0));
 
+#if HAL_USE_BUTTONS
+    BoardButtons::BtnCardDetect.RegisterListener(&carddetectEvtListener, EVENT_MASK(0));
+#endif
     //if (m_carddetectButton->GetState() == false)
     {
         OnCardInserted();
@@ -95,6 +103,10 @@ void ModuleCardreader::ThreadMain()
     }
 
     OnCardRemoved();
+
+#if HAL_USE_BUTTONS
+    BoardButtons::BtnCardDetect.UnregisterListener(&carddetectEvtListener);
+#endif
 }
 
 void ModuleCardreader::OnCardRemoved()
@@ -118,7 +130,7 @@ void ModuleCardreader::OnCardInserted()
 
 bool ModuleCardreader::MountFilesystem()
 {
-    if (sdcConnect(m_sdc) == HAL_SUCCESS)
+    if (sdcConnect(&SDCD1) == HAL_SUCCESS)
     {
         FRESULT err;
         err = f_mount(&m_filesystem, "/mount/", 1);
@@ -142,7 +154,7 @@ bool ModuleCardreader::UnmountFilesystem()
 
     err = f_mount(NULL, "/mount/", 0);
 
-    sdcDisconnect(m_sdc);
+    sdcDisconnect(&SDCD1);
     if (err != FR_OK) {
         chprintf(DEBUG_CANNEL, "FS: f_mount() unmount failed\r\n");
         PrintFilesystemError(DEBUG_CANNEL, err);
@@ -220,6 +232,10 @@ const char* ModuleCardreader::FilesystemResultToString(FRESULT stat)
 }
 
 }
+
+MODULE_INITCALL(0, qos::ModuleInit<tmb_musicplayer::ModuleCardreaderSingeton>::Init,
+        qos::ModuleInit<tmb_musicplayer::ModuleCardreaderSingeton>::Start,
+        qos::ModuleInit<tmb_musicplayer::ModuleCardreaderSingeton>::Shutdown)
 
 #endif /* MOD_CARDREADER */
 /** @} */
