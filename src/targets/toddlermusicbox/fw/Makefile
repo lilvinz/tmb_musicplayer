@@ -28,6 +28,7 @@ include $(ROOT_DIR)/submodules/mfrc522/library.mk
 
 # FATFS
 include $(ROOT_DIR)/submodules/fatfs/library.mk
+include $(ROOT_DIR)/submodules/qos/various/fatfs_bindings/library.mk
 
 # List modules to include in this build here
 MODULES += $(notdir $(wildcard $(ROOT_DIR)/src/modules/*))

@@ -24,6 +24,8 @@
 #define LED_DECODE              &LED2
 #define LED_RFID                &LED4
 
+#define CODEC                   &VS1053D1
+
 #define PARTITION_BL            ((BaseNVMDevice*)&nvm_part_internal_flash_bl)
 #define PARTITION_FW            ((BaseNVMDevice*)&nvm_part_internal_flash_fw)
 #define PARTITION_BL_UPDATE     ((BaseNVMDevice*)&nvm_memory_bl_bin)
@@ -31,7 +33,7 @@
 /* List modules here. */
 #define MOD_TEST_CPP                TRUE
 #define MOD_MUSICBOX                FALSE
-#define MOD_PLAYER                  FALSE
+#define MOD_PLAYER                  TRUE
 #define MOD_RFID                    TRUE
 #define MOD_INPUT                   TRUE
 #define MOD_EFFECTS                 FALSE

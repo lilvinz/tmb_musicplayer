@@ -34,7 +34,7 @@ public:
     static tmb_musicplayer::Button BtnVolUp;
     static tmb_musicplayer::Button BtnVolDown;
     static tmb_musicplayer::Button BtnCardDetect;
-    static tmb_musicplayer::Button* Buttons[5];
+    static tmb_musicplayer::Button* Buttons[6];
 };
 #endif /* HAL_USE_BUTTONS */
 

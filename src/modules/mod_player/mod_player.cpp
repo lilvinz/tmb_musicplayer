@@ -9,15 +9,20 @@
 
 #if MOD_PLAYER
 
+#include "ch_tools.h"
+#include "watchdog.h"
+#include "module_init_cpp.h"
+
+#include "qhal.h"
+#include "chprintf.h"
+
+#include "ff.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-#include "ch.h"
-#include "chprintf.h"
-
-#include "ff.h"
-#include "mod_led.h"
+template <>
+tmb_musicplayer::ModulePlayer tmb_musicplayer::ModulePlayerSingeton::instance = tmb_musicplayer::ModulePlayer();
 
 #define EVENTMASK_COMMANDS EVENT_MASK(0)
 #define EVENTMASK_CODEC EVENT_MASK(1)
@@ -30,6 +35,17 @@ ModulePlayer::ModulePlayer()
 {
 
 }
+
+ModulePlayer::~ModulePlayer()
+{
+
+}
+
+void ModulePlayer::Init()
+{
+    watchdog_register(WATCHDOG_MOD_PLAYER_PUMP);
+}
+
 
 void ModulePlayer::Start()
 {
@@ -244,7 +260,7 @@ bool ModulePlayer::FindFileWithID(uint16_t wantedFileId, uint16_t& folderStartId
     {
         while (true)
         {
-            FRESULT res = f_readdir(&dir, &fno);
+            res = f_readdir(&dir, &fno);
             /*
              * If the directory read failed or the
              */
@@ -348,9 +364,37 @@ void ModulePlayer::PumpThread::ResetPath()
     basePathEndIdx = 0;
 }
 
+void ModulePlayer::PumpThread::SignalReadActionOn()
+{
+#if HAL_USE_LED
+    ledOn(LED_READ);
+#endif
+}
+
+void ModulePlayer::PumpThread::SignalReadActionOff()
+{
+#if HAL_USE_LED
+    ledOff(LED_READ);
+#endif
+}
+
+void ModulePlayer::PumpThread::SignalDecodeActionOn()
+{
+#if HAL_USE_LED
+    ledOn(LED_DECODE);
+#endif
+}
+
+void ModulePlayer::PumpThread::SignalDecodeActionOff()
+{
+#if HAL_USE_LED
+    ledOff(LED_DECODE);
+#endif
+}
+
+
 void ModulePlayer::PumpThread::main()
 {
-    chDbgAssert(m_codec != NULL, "No codec set!!");
     chRegSetThreadName("playerPump");
 
     char Buffer[32];
@@ -361,6 +405,7 @@ void ModulePlayer::PumpThread::main()
     bool pumpData = false;
     while (chThdShouldTerminateX() == false)
     {
+        watchdog_reload(WATCHDOG_MOD_PLAYER_PUMP);
         chibios_rt::System::lock();
         pumpData = m_pump;
         chibios_rt::System::unlock();
@@ -379,6 +424,8 @@ void ModulePlayer::PumpThread::main()
                  */
                 do
                 {
+                    watchdog_reload(WATCHDOG_MOD_PLAYER_PUMP);
+
                     if (m_pump == false)
                     {
                         if (m_pausePump ==  true)
@@ -400,24 +447,24 @@ void ModulePlayer::PumpThread::main()
                         /*
                          * Read the file.
                          */
-                        m_readLED->On();
+                        SignalReadActionOn();
                         err = f_read(&fsrc, Buffer, ByteToRead, &ByteRead);
-                        m_readLED->Off();
+                        SignalReadActionOff();
                         if (err == FR_OK && ByteRead > 0)
                         {
-                            m_decodeLED->On();
+                            SignalDecodeActionOn();
 
                             m_codecMutex.lock();
                             {
-                                if (VS1053SendData(m_codec, Buffer, ByteRead) != ByteRead)
+                                if (VS1053SendData(CODEC, Buffer, ByteRead) != ByteRead)
                                 {
                                     ByteRead = 0;
                                 }
-                                codecStatus = VS1053ReadStatus(m_codec);
+                                codecStatus = VS1053ReadStatus(CODEC);
                             }
                             m_codecMutex.unlock();
 
-                            m_decodeLED->Off();
+                            SignalDecodeActionOff();
 
                             byteTransferred = byteTransferred + ByteRead;
 
@@ -425,7 +472,7 @@ void ModulePlayer::PumpThread::main()
                             {
                                 m_codecMutex.lock();
                                 {
-                                    VS1053ReadHeaderData(m_codec, headerDater, headerDater + 1);
+                                    VS1053ReadHeaderData(CODEC, headerDater, headerDater + 1);
                                 }
                                 m_codecMutex.unlock();
 
@@ -479,7 +526,7 @@ void ModulePlayer::PumpThread::main()
 
                 m_codecMutex.lock();
                 {
-                    VS1053StopPlaying(m_codec);
+                    VS1053StopPlaying(CODEC);
                 }
                 m_codecMutex.unlock();
 
@@ -497,6 +544,10 @@ void ModulePlayer::PumpThread::main()
 }
 
 }
+
+MODULE_INITCALL(0, qos::ModuleInit<tmb_musicplayer::ModulePlayerSingeton>::Init,
+        qos::ModuleInit<tmb_musicplayer::ModulePlayerSingeton>::Start,
+        qos::ModuleInit<tmb_musicplayer::ModulePlayerSingeton>::Shutdown)
 
 #endif /* MOD_PLAYER */
 /** @} */

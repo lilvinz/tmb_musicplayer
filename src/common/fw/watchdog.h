@@ -21,6 +21,8 @@ enum watchdog_source
     WATCHDOG_MOD_TEST,
     WATCHDOG_MOD_RFID,
     WATCHDOG_MOD_INPUT,
+    WATCHDOG_MOD_PLAYER,
+    WATCHDOG_MOD_PLAYER_PUMP,
 };
 
 #ifdef __cplusplus

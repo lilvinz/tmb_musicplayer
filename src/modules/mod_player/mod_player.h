@@ -12,13 +12,12 @@
 
 #include "target_cfg.h"
 #include "threadedmodule.h"
+#include "singleton.h"
+
 
 #if MOD_PLAYER
 
-#include "hal.h"
-#include "module.h"
 
-#include "vs1053.h"
 /*===========================================================================*/
 /* Module constants.                                                         */
 /*===========================================================================*/
@@ -57,24 +56,16 @@
 namespace tmb_musicplayer
 {
 
-class ModulePlayer : public Module<MOD_PLAYER_THREADSIZE>
+class ModulePlayer : public qos::ThreadedModule<MOD_PLAYER_THREADSIZE>
 {
 public:
 
     ModulePlayer();
+    ~ModulePlayer();
 
+    virtual void Init();
     virtual void Start();
     virtual void Shutdown();
-
-    void SetLED(class Led* readLED, class Led* decodeLED)
-    {
-        m_pumpThread.SetLED(readLED, decodeLED);
-    }
-
-    void SetDecoder(VS1053Driver* codec)
-    {
-        m_pumpThread.SetDecoder(codec);
-    }
 
     void Play(const char* path);
     void Toggle(void);
@@ -85,7 +76,7 @@ public:
 
 
 protected:
-    typedef Module<MOD_PLAYER_THREADSIZE> BaseClass;
+    typedef qos::ThreadedModule<MOD_PLAYER_THREADSIZE> BaseClass;
 
     enum CommandEventFlags
     {
@@ -127,17 +118,6 @@ private:
             m_playerThread = thread;
         }
 
-        void SetLED(class Led* readLED, class Led* decodeLED)
-        {
-           m_readLED = readLED;
-           m_decodeLED = decodeLED;
-        }
-
-        void SetDecoder(VS1053Driver* codec)
-        {
-           m_codec = codec;
-        }
-
        char* AccessPathBuffer() {return m_pathbuffer;}
 
        void SetBasePath(const char* path);
@@ -148,9 +128,12 @@ private:
         virtual void main();
 
     private:
-        class Led* m_readLED = NULL;
-        class Led* m_decodeLED = NULL;
-        VS1053Driver* m_codec = NULL;
+
+        void SignalReadActionOn();
+        void SignalReadActionOff();
+
+        void SignalDecodeActionOn();
+        void SignalDecodeActionOff();
 
         char m_pathbuffer[512];
         uint16_t basePathEndIdx = 0;
@@ -171,7 +154,10 @@ private:
 
     chibios_rt::EvtSource m_eventSource;
     chibios_rt::ObjectsPool<FileNameMsg, MOD_PLAYER_CMD_QUEUE_SIZE> m_MsgObjectPool;
-    chibios_rt::Mailbox<FileNameMsg*, MOD_PLAYER_CMD_QUEUE_SIZE> m_Mailbox;};
+    chibios_rt::Mailbox<FileNameMsg*, MOD_PLAYER_CMD_QUEUE_SIZE> m_Mailbox;
+};
+
+typedef qos::Singleton<ModulePlayer> ModulePlayerSingeton;
 
 }
 
