@@ -242,12 +242,23 @@ void ModuleMusicbox::OnCardReaderEvent(eventflags_t flags)
 {
     if (flags & ModuleCardreader::FilesystemMounted)
     {
-
+        if (hasRFIDCard == true)
+        {
+            if (m_modRFID->GetCurrentCardId(uid) == true)
+            {
+                hasRFIDCard = true;
+                char pszUID[32];
+                if (MifareUIDToString(uid, pszUID) > 0)
+                {
+                    ProcessMifareUID(pszUID);
+                }
+            }
+        }
     }
 
     if (flags & ModuleCardreader::FilesystemUnmounted)
     {
-
+        m_modPlayer->Stop();
     }
 }
 
@@ -329,7 +340,7 @@ size_t ModuleMusicbox::MifareUIDToString(const MifareUID& uid, char* psz)
 
 }
 
-MODULE_INITCALL(6, qos::ModuleInit<tmb_musicplayer::ModuleMusicboxSingelton>::Init,
+MODULE_INITCALL(2, qos::ModuleInit<tmb_musicplayer::ModuleMusicboxSingelton>::Init,
         qos::ModuleInit<tmb_musicplayer::ModuleMusicboxSingelton>::Start,
         qos::ModuleInit<tmb_musicplayer::ModuleMusicboxSingelton>::Shutdown)
 
