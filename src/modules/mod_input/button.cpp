@@ -52,7 +52,7 @@ void Button::Process(systime_t now)
     {
         if (currState != state)
         {
-            if (state)
+            if (currState)
             {
                 evtSource.broadcastFlags(Up | Pressed);
             }
