@@ -27,6 +27,8 @@ tmb_musicplayer::ModulePlayer tmb_musicplayer::ModulePlayerSingelton::instance =
 #define EVENTMASK_COMMANDS EVENT_MASK(0)
 #define EVENTMASK_CODEC EVENT_MASK(1)
 #define EVENTMASK_PUMPTHREAD_STOP EVENT_MASK(2)
+#define EVENTMASK_PUMPTHREAD_START EVENT_MASK(3)
+
 
 namespace tmb_musicplayer
 {
@@ -75,7 +77,11 @@ void ModulePlayer::ThreadMain()
     while (chThdShouldTerminateX() == false)
     {
         eventmask_t evt = chEvtWaitAny(ALL_EVENTS);
-        if (evt & EVENTMASK_PUMPTHREAD_STOP)
+        if (evt & EVENTMASK_PUMPTHREAD_START)
+        {
+            state = StatePlay;
+        }
+        else if (evt & EVENTMASK_PUMPTHREAD_STOP)
         {
             bool startPlaying = false;
             if (state == StateNext || state == StatePlay)
@@ -95,7 +101,7 @@ void ModulePlayer::ThreadMain()
                 char* basePath = m_pumpThread.AccessPathBuffer();
                 if (QueryCurrentFilename(currentFileInDirectory, basePath) == true)
                 {
-                    state = StatePlay;
+
                     m_pumpThread.StartTransfer();
                 }
                 else
@@ -150,7 +156,7 @@ void ModulePlayer::ThreadMain()
                 else if (state == StatePlay)
                 {
                     state = StatePause;
-                    m_pumpThread.StopTransfer();
+                    m_pumpThread.PauseTransfer();
                 }
                 else if (state == StateIdle)
                 {
@@ -418,6 +424,8 @@ void ModulePlayer::PumpThread::main()
                 uint16_t headerDater[2];
                 uint16_t codecStatus;
                 uint32_t byteTransferred = 0;
+
+                m_playerThread->signalEvents(EVENTMASK_PUMPTHREAD_START);
                 /*
                  * Do while the number of bytes read is equal to the number of bytes to read
                  * (the buffer is filled)
@@ -529,15 +537,12 @@ void ModulePlayer::PumpThread::main()
                     VS1053StopPlaying(CODEC);
                 }
                 m_codecMutex.unlock();
-
-                if (err == FR_OK)
-                {
-                    chibios_rt::System::lock();
-                    m_pump = false;
-                    chibios_rt::System::unlock();
-                    m_playerThread->signalEvents(EVENTMASK_PUMPTHREAD_STOP);
-                }
             }
+
+            chibios_rt::System::lock();
+            m_pump = false;
+            chibios_rt::System::unlock();
+            m_playerThread->signalEvents(EVENTMASK_PUMPTHREAD_STOP);
         }
         chThdSleep(MS2ST(100));
     }
