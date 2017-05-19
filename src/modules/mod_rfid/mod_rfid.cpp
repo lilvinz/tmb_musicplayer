@@ -149,7 +149,7 @@ void ModuleRFID::SetRFIDDetectLed(bool on)
 
 }
 
-MODULE_INITCALL(1, qos::ModuleInit<tmb_musicplayer::ModuleRFIDSingelton>::Init,
+MODULE_INITCALL(6, qos::ModuleInit<tmb_musicplayer::ModuleRFIDSingelton>::Init,
         qos::ModuleInit<tmb_musicplayer::ModuleRFIDSingelton>::Start,
         qos::ModuleInit<tmb_musicplayer::ModuleRFIDSingelton>::Shutdown)
 
