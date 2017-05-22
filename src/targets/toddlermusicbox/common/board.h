@@ -19,7 +19,7 @@
 #include <stdbool.h>
 
 /*
- * Setup for discoveryf407 board.
+ * Setup for toddlermusicbox board.
  */
 
 /*
