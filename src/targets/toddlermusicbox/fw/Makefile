@@ -26,6 +26,9 @@ include $(ROOT_DIR)/submodules/ws281x/library.mk
 # MFRC522
 include $(ROOT_DIR)/submodules/mfrc522/library.mk
 
+# EFFECTS
+include $(ROOT_DIR)/submodules/tmb_effects/library.mk
+
 # FATFS
 include $(ROOT_DIR)/submodules/fatfs/library.mk
 include $(ROOT_DIR)/submodules/qos/various/fatfs_bindings/library.mk
@@ -70,7 +73,7 @@ CFLAGS += -DCORTEX_VTOR_INIT=$$(($(FW_ORIGIN) - $(EF_ORIGIN)))
 CFLAGS += -DBL_BIN=$(OUTDIR)/../bl_$(BOARD_NAME)/bl_$(BOARD_NAME).bin
 CFLAGS += -DBG_BIN=$(OUTDIR)/../bg_$(BOARD_NAME)/bg_$(BOARD_NAME).bin
 
-# Place project-specific -D (define) and/or 
+# Place project-specific -D (define) and/or
 # -U options for CPP here.
 ifdef NDEBUG
     CPPFLAGS += -DNDEBUG

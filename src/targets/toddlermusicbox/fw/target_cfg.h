@@ -36,8 +36,12 @@
 #define MOD_PLAYER                  TRUE
 #define MOD_RFID                    TRUE
 #define MOD_INPUT                   TRUE
-#define MOD_EFFECTS                 FALSE
+#define MOD_EFFECTS                 TRUE
 #define MOD_CARDREADER              TRUE
+
+#define DISPLAY_WIDTH 5
+#define DISPLAY_HEIGHT 1
+#define LEDCOUNT 5
 
 
 #define DEBUG_CANNEL (BaseSequentialStream *)&SD6

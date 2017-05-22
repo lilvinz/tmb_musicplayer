@@ -27,6 +27,7 @@
 #include "mod_rfid.h"
 #include "mod_cardreader.h"
 #include "mod_player.h"
+#include "mod_effects.h"
 
 
 #define EVENTMASK_RFID EVENT_MASK(0)
@@ -76,6 +77,7 @@ void ModuleMusicbox::Init()
     m_modRFID = ModuleRFIDSingelton::GetInstance();
     m_modCardreader = ModuleCardreaderSingelton::GetInstance();
     m_modPlayer = ModulePlayerSingelton::GetInstance();
+    m_modEffects = ModuleEffectsSingelton::GetInstance();
 }
 
 void ModuleMusicbox::Start()
@@ -235,6 +237,8 @@ void ModuleMusicbox::OnRFIDEvent(eventflags_t flags)
     {
         hasRFIDCard = false;
         m_modPlayer->Stop();
+
+        m_modEffects->SetMode(ModuleEffects::ModeEmptyPlaylist);
     }
 }
 
@@ -259,6 +263,7 @@ void ModuleMusicbox::OnCardReaderEvent(eventflags_t flags)
     if (flags & ModuleCardreader::FilesystemUnmounted)
     {
         m_modPlayer->Stop();
+        m_modEffects->SetMode(ModuleEffects::ModeEmptyPlaylist);
     }
 }
 
@@ -290,6 +295,8 @@ void ModuleMusicbox::ProcessMifareUID(const char* pszUID)
     {
         if (m_modCardreader->CommandFind(&directory, &fileInfo, "/music", pszUID) == true)
         {
+            m_modEffects->SetMode(ModuleEffects::ModeStop);
+
             memset(absoluteFileNameBuffer, 0, sizeof(absoluteFileNameBuffer));
             strcat(absoluteFileNameBuffer, "/music/");
             strcat(absoluteFileNameBuffer, fileInfo.lfname);

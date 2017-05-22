@@ -22,3 +22,6 @@
 [submodule "submodules/chibios"]
 	path = submodules/chibios
 	url = git@github.com:lilvinz/chibios.git
+[submodule "submodules/tmb_effects"]
+	path = submodules/tmb_effects
+	url = git@github.com:janfietz/tmb_effects.git

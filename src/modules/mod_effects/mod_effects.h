@@ -10,64 +10,106 @@
 #define _MOD_EFFECTS_H_
 
 #include "target_cfg.h"
-//#include "threadedmodule.h"
+#include "threadedmodule.h"
+#include "singleton.h"
+
+#include "color.h"
+#include "display.h"
+
+#include "mood.h"
+#include "mood_default.h"
 
 #if MOD_EFFECTS
-
-#include "hal.h"
-
-/*===========================================================================*/
-/* Module constants.                                                         */
-/*===========================================================================*/
 
 /*===========================================================================*/
 /* Module pre-compile time settings.                                         */
 /*===========================================================================*/
 #ifndef MOD_EFFECTS_THREADSIZE
-#define MOD_EFFECTS_THREADSIZE 128
+#define MOD_EFFECTS_THREADSIZE 256
 #endif
 
 #ifndef MOD_EFFECTS_THREADPRIO
 #define MOD_EFFECTS_THREADPRIO LOWPRIO
 #endif
 
-/*===========================================================================*/
-/* Derived constants and error checks.                                       */
-/*===========================================================================*/
+#ifndef LEDCOUNT
+#error "LEDCOUNT driver must be specified for this target"
+#endif
 
-/*===========================================================================*/
-/* Module data structures and types.                                         */
-/*===========================================================================*/
+#ifndef DISPLAY_WIDTH
+#error "DISPLAY_WIDTH driver must be specified for this target"
+#endif
 
+#ifndef DISPLAY_HEIGHT
+#error "DISPLAY_HEIGHT driver must be specified for this target"
+#endif
+
+namespace tmb_musicplayer
+{
 /**
  * @brief
  */
-typedef struct {
 
-} ModEffectsConfig;
+class ModuleEffects : public qos::ThreadedModule<MOD_EFFECTS_THREADSIZE>
+{
+public:
+
+    enum PlayModes
+    {
+        ModePlay = 0,
+        ModePause,
+        ModeStop,
+        ModeEmptyPlaylist,
+    };
+
+    ModuleEffects();
+    ~ModuleEffects();
+
+    virtual void Init();
+    virtual void Start();
+    virtual void Shutdown();
+
+    void SetMode(PlayModes mode);
+
+protected:
+    typedef qos::ThreadedModule<MOD_EFFECTS_THREADSIZE> BaseClass;
+
+    virtual void ThreadMain();
+    virtual tprio_t GetThreadPrio() const {return MOD_EFFECTS_THREADPRIO;}
+
+private:
+    void DrawCurrentMood();
+
+    Color displayPixel[LEDCOUNT];
+    DisplayBuffer display =
+    {
+        .width = DISPLAY_WIDTH,
+        .height = DISPLAY_HEIGHT,
+        .pixels = displayPixel,
+    };
+
+    Mood* currentMood = NULL;
+
+    class Msg
+    {
+    public:
+        PlayModes mode;
+        uint8_t spare1;
+        uint8_t spare2;
+        uint8_t spare3;
+    };
 
 
+    chibios_rt::ObjectsPool<Msg, 2> m_MsgObjectPool;
+    chibios_rt::Mailbox<Msg*, 2> m_Mailbox;
 
-/*===========================================================================*/
-/* Module macros.                                                            */
-/*===========================================================================*/
+    static MoodDefault defaultMood;
 
-/*===========================================================================*/
-/* External declarations.                                                    */
-/*===========================================================================*/
+};
+typedef qos::Singleton<ModuleEffects> ModuleEffectsSingelton;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-  void mod_effects_init(ModEffectsConfig* config);
-  bool mod_effects_start(void);
-  void mod_effects_shutdown(void);
-#ifdef __cplusplus
 }
-#endif
-
 #endif /* MOD_EFFECTS */
-
 #endif /* _MOD_EFFECTS_H_ */
 
 /** @} */

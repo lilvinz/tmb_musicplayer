@@ -111,6 +111,7 @@ private:
     class ModuleRFID* m_modRFID = NULL;
     class ModuleCardreader* m_modCardreader = NULL;
     class ModulePlayer* m_modPlayer = NULL;
+    class ModuleEffects* m_modEffects = NULL;
 };
 typedef qos::Singleton<ModuleMusicbox> ModuleMusicboxSingelton;
 

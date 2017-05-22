@@ -61,6 +61,9 @@ include $(ROOT_DIR)/submodules/mfrc522/library.mk
 # FATFS
 include $(ROOT_DIR)/submodules/fatfs/library.mk
 
+# EFFECTS
+include $(ROOT_DIR)/submodules/tmb_effects/library.mk
+
 # List modules to include in this build here
 MODULES += $(notdir $(wildcard $(ROOT_DIR)/src/modules/*))
 
@@ -122,7 +125,7 @@ endif
 DEFS      = $(DDEFS) $(UDEFS)
 ADEFS 	  = $(DADEFS) $(UADEFS)
 
-# Place project-specific -D (define) and/or 
+# Place project-specific -D (define) and/or
 # -U options for C here.
 ifdef NDEBUG
     CFLAGS += -DNDEBUG
@@ -131,7 +134,7 @@ ifdef NDEBUG
 endif
 CFLAGS += -DCORTEX_VTOR_INIT=$$(($(BL_ORIGIN) - $(EF_ORIGIN)))
 
-# Place project-specific -D (define) and/or 
+# Place project-specific -D (define) and/or
 # -U options for CPP here.
 ifdef NDEBUG
     CPPFLAGS += -DCORTEX_USE_FPU=TRUE
@@ -141,7 +144,7 @@ else
 endif
 CPPFLAGS += -DCORTEX_VTOR_INIT=$$(($(BL_ORIGIN) - $(EF_ORIGIN)))
 
-# Place project-specific -D and/or -U options for 
+# Place project-specific -D and/or -U options for
 # Assembler with preprocessor here.
 ASFLAGS += -D__ASSEMBLY__
 
@@ -150,7 +153,7 @@ EXTRA_LIBS += c
 EXTRA_LIBS += gcc
 
 # Compiler flags
-CFLAGS += $(OPT) $(COPT) 
+CFLAGS += $(OPT) $(COPT)
 CFLAGS += -Wall -Wextra -Werror
 CFLAGS += -Wimplicit -Wpointer-arith -Wredundant-decls -Wshadow -Wno-unused-parameter
 CFLAGS += -Wno-unused-but-set-variable -Wunsuffixed-float-constants -Wstrict-prototypes
@@ -165,13 +168,13 @@ endif
 CFLAGS += $(patsubst %, -I%, $(EXTRAINCDIRS))
 
 # Compiler flags
-CPPFLAGS += $(OPT) $(CPPOPT) 
+CPPFLAGS += $(OPT) $(CPPOPT)
 CPPFLAGS += -Wall -Wextra -Werror
 CPPFLAGS += -Wpointer-arith -Wredundant-decls -Wshadow -Wno-unused-parameter
 CPPFLAGS += -Wno-unused-but-set-variable
 CPPFLAGS += -fno-builtin-printf -nodefaultlibs
 CPPFLAGS += -MMD -MP -MF $(OUTDIR)/$(@F).d
-CPPFLAGS += -std=c++14 
+CPPFLAGS += -std=c++14
 CPPFLAGS += -mcpu=cortex-m4
 CPPFLAGS += $(DEFS)
 ifdef NDEBUG

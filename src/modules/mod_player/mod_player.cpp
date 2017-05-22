@@ -21,6 +21,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "mod_effects.h"
+
 template <>
 tmb_musicplayer::ModulePlayer tmb_musicplayer::ModulePlayerSingelton::instance = tmb_musicplayer::ModulePlayer();
 
@@ -80,6 +82,7 @@ void ModulePlayer::ThreadMain()
         if (evt & EVENTMASK_PUMPTHREAD_START)
         {
             state = StatePlay;
+            ModuleEffectsSingelton::GetInstance()->SetMode(ModuleEffects::ModePlay);
         }
         else if (evt & EVENTMASK_PUMPTHREAD_STOP)
         {
@@ -107,11 +110,13 @@ void ModulePlayer::ThreadMain()
                 else
                 {
                     state = StateIdle;
+                    ModuleEffectsSingelton::GetInstance()->SetMode(ModuleEffects::ModeStop);
                 }
             }
             else
             {
                 state = StateIdle;
+                ModuleEffectsSingelton::GetInstance()->SetMode(ModuleEffects::ModeStop);
             }
         }
         else if (evt & EVENTMASK_COMMANDS)
@@ -151,12 +156,14 @@ void ModulePlayer::ThreadMain()
                     {
                         state = StatePlay;
                         m_pumpThread.StartTransfer();
+                        ModuleEffectsSingelton::GetInstance()->SetMode(ModuleEffects::ModePlay);
                     }
                 }
                 else if (state == StatePlay)
                 {
                     state = StatePause;
                     m_pumpThread.PauseTransfer();
+                    ModuleEffectsSingelton::GetInstance()->SetMode(ModuleEffects::ModePause);
                 }
                 else if (state == StateIdle)
                 {
