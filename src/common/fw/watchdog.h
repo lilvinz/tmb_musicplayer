@@ -23,6 +23,7 @@ enum watchdog_source
     WATCHDOG_MOD_INPUT,
     WATCHDOG_MOD_PLAYER,
     WATCHDOG_MOD_PLAYER_PUMP,
+    WATCHDOG_MOD_EFFECTS,
 };
 
 #ifdef __cplusplus
