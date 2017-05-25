@@ -1,6 +1,6 @@
 [submodule "submodules/mfrc522"]
 	path = submodules/mfrc522
-	url =https://ithub.com/janfietz/mfrc522.git
+	url = https://github.com/janfietz/mfrc522.git
 [submodule "submodules/ws281x"]
 	path = submodules/ws281x
 	url = https://github.com/janfietz/ws281x.git
