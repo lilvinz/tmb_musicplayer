@@ -18,7 +18,7 @@
 #include "board_drivers.h"
 
 #define LED_STATUS              &led_green
-#define LED_WARNING             &led_red
+#define LED_DECODE             &led_red
 
 #define PARTITION_BL            ((BaseNVMDevice*)&nvm_part_internal_flash_bl)
 #define PARTITION_FW            ((BaseNVMDevice*)&nvm_part_internal_flash_fw)
@@ -26,5 +26,6 @@
 
 /* List modules here. */
 #define MOD_TEST                TRUE
+#define DEBUG_CANNEL NULL
 
 #endif /* TARGET_CFG_H */
