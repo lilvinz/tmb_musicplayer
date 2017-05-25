@@ -1,9 +1,9 @@
 [submodule "submodules/mfrc522"]
 	path = submodules/mfrc522
-	url = git@github.com:janfietz/mfrc522.git
+	url =https://ithub.com:janfietz/mfrc522.git
 [submodule "submodules/ws281x"]
 	path = submodules/ws281x
-	url = git@github.com:janfietz/ws281x.git
+	url = https://github.com:janfietz/ws281x.git
 [submodule "submodules/flashtool"]
 	path = submodules/flashtool
 	url = https://github.com/lilvinz/flashtool.git
@@ -21,7 +21,7 @@
 	url = https://github.com/lilvinz/minini.git
 [submodule "submodules/chibios"]
 	path = submodules/chibios
-	url = git@github.com:lilvinz/chibios.git
+	url = https://github.com:lilvinz/chibios.git
 [submodule "submodules/tmb_effects"]
 	path = submodules/tmb_effects
-	url = git@github.com:janfietz/tmb_effects.git
+	url = https://github.com/janfietz/tmb_effects.git
