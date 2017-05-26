@@ -18,6 +18,8 @@
 #include <stdbool.h>
 #include "target_cfg.h"
 
+#include "chprintf.h"
+
 BSEMAPHORE_DECL(main_shutdown_sema, true);
 
 /*
@@ -71,6 +73,8 @@ int main(void)
 #endif /* defined(PARTITION_BL) && defined(PARTITION_BL_UPDATE) */
 
     MODULE_INITIALISE_ALL();
+
+    chprintf(DEBUG_CANNEL, "\r\n\r\n----- ToddlerMusicbox Main -----\r\n");
 
     MODULE_START_ALL();
 
