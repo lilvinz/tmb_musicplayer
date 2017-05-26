@@ -124,6 +124,7 @@ private:
         void StartTransfer();
         void PauseTransfer();
         void StopTransfer();
+        void SetVolume(uint8_t volume);
 
         void SetPlayerThread(chibios_rt::BaseThread* thread)
         {
@@ -152,22 +153,24 @@ private:
 
         bool m_pump = false;
         bool m_pausePump = false;
+        uint8_t m_volume = 0;
         chibios_rt::Mutex m_codecMutex;
         chibios_rt::BaseThread* m_playerThread;
     };
 
-    class FileNameMsg
+    class Message
     {
     public:
+        eventmask_t evtMask;
         char fileName[128];
+        uint8_t volume;
     };
 
     PumpThread m_pumpThread;
 
     chibios_rt::EvtSource m_evtSource;
-    chibios_rt::EvtSource m_internalEventSource;
-    chibios_rt::ObjectsPool<FileNameMsg, MOD_PLAYER_CMD_QUEUE_SIZE> m_MsgObjectPool;
-    chibios_rt::Mailbox<FileNameMsg*, MOD_PLAYER_CMD_QUEUE_SIZE> m_Mailbox;
+    chibios_rt::ObjectsPool<Message, MOD_PLAYER_CMD_QUEUE_SIZE> m_MsgObjectPool;
+    chibios_rt::Mailbox<Message*, MOD_PLAYER_CMD_QUEUE_SIZE> m_Mailbox;
 };
 
 typedef qos::Singleton<ModulePlayer> ModulePlayerSingelton;

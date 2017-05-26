@@ -26,11 +26,15 @@
 template <>
 tmb_musicplayer::ModulePlayer tmb_musicplayer::ModulePlayerSingelton::instance = tmb_musicplayer::ModulePlayer();
 
-#define EVENTMASK_COMMANDS EVENT_MASK(0)
-#define EVENTMASK_CODEC EVENT_MASK(1)
-#define EVENTMASK_PUMPTHREAD_STOP EVENT_MASK(2)
-#define EVENTMASK_PUMPTHREAD_START EVENT_MASK(3)
-
+#define EVENTMASK_PUMPTHREAD_STOP EVENT_MASK(0)
+#define EVENTMASK_PUMPTHREAD_START EVENT_MASK(1)
+#define EVENTMASK_COMMAND_PLAY EVENT_MASK(2)
+#define EVENTMASK_COMMAND_STOP EVENT_MASK(3)
+#define EVENTMASK_COMMAND_PREV EVENT_MASK(4)
+#define EVENTMASK_COMMAND_NEXT EVENT_MASK(5)
+#define EVENTMASK_COMMAND_VOLUME EVENT_MASK(6)
+#define EVENTMASK_COMMAND_PAUSE EVENT_MASK(7)
+#define EVENTMASK_MAIL EVENT_MASK(8)
 
 namespace tmb_musicplayer
 {
@@ -68,9 +72,6 @@ void ModulePlayer::Shutdown()
 void ModulePlayer::ThreadMain()
 {
     chRegSetThreadName("player");
-
-    chibios_rt::EvtListener commandListener;
-    m_internalEventSource.registerMask(&commandListener, EVENTMASK_COMMANDS);
 
     State state = StateIdle;
 
@@ -127,84 +128,90 @@ void ModulePlayer::ThreadMain()
                 m_evtSource.broadcastFlags(EventStop);
             }
         }
-        else if (evt & EVENTMASK_COMMANDS)
+        else if (evt & EVENTMASK_MAIL)
         {
-            eventflags_t flags = commandListener.getAndClearFlags();
-            if (flags & PLAY_FILE)
+            /* Processing the event.*/
+            Message* msg = NULL;
+            while (m_Mailbox.fetch(&msg, TIME_IMMEDIATE) == MSG_OK)
             {
-                /* Processing the event.*/
-                FileNameMsg* msg = NULL;
-
-                while (m_Mailbox.fetch(&msg, TIME_IMMEDIATE) == MSG_OK)
+                if (msg->evtMask & EVENTMASK_COMMAND_PLAY)
                 {
                     m_pumpThread.SetBasePath(msg->fileName);
-                    m_MsgObjectPool.free(msg);
-
                     currentFileInDirectory = 0;
 
-                    char* basePath = m_pumpThread.AccessPathBuffer();
-                    if (QueryCurrentFilename(currentFileInDirectory, basePath) == true)
-                    {
-                        chprintf(DEBUG_CANNEL, "ModulePlayer: play file %s.\r\n", basePath);
-                        m_pumpThread.StartTransfer();
-                    }
+                   char* basePath = m_pumpThread.AccessPathBuffer();
+                   if (QueryCurrentFilename(currentFileInDirectory, basePath) == true)
+                   {
+                       chprintf(DEBUG_CANNEL, "ModulePlayer: play file %s.\r\n", basePath);
+                       m_pumpThread.StartTransfer();
+                   }
+                }
+                else if (msg->evtMask & EVENTMASK_COMMAND_VOLUME)
+                {
+                    chprintf(DEBUG_CANNEL, "ModulePlayer: set volume %d.\r\n", msg->volume);
+                    m_pumpThread.SetVolume(msg->volume);
+                }
+
+                m_MsgObjectPool.free(msg);
+
+
+            }
+        }
+        else if (evt & EVENTMASK_COMMAND_PLAY)
+        {
+        }
+        else if (evt & EVENTMASK_COMMAND_STOP)
+        {
+            state = StateIdle;
+            m_pumpThread.StopTransfer();
+        }
+        else if (evt & EVENTMASK_COMMAND_PAUSE)
+        {
+            if (state == StatePause)
+            {
+                char* basePath = m_pumpThread.AccessPathBuffer();
+                if (*basePath != 0)
+                {
+                    state = StatePlay;
+                    m_pumpThread.StartTransfer();
+                    m_evtSource.broadcastFlags(EventPlay);
                 }
             }
-            if (flags & STOP)
+            else if (state == StatePlay)
             {
-                state = StateIdle;
-                m_pumpThread.StopTransfer();
+                state = StatePause;
+                m_pumpThread.PauseTransfer();
+                m_evtSource.broadcastFlags(EventPause);
             }
-            if (flags & PAUSE)
+            else if (state == StateIdle)
             {
-                if (state == StatePause)
+                currentFileInDirectory = 0;
+                m_pumpThread.ResetPathtoBase();
+                char* basePath = m_pumpThread.AccessPathBuffer();
+                if (QueryCurrentFilename(currentFileInDirectory, basePath) == true)
                 {
-                    char* basePath = m_pumpThread.AccessPathBuffer();
-                    if (*basePath != 0)
-                    {
-                        state = StatePlay;
-                        m_pumpThread.StartTransfer();
-                        m_evtSource.broadcastFlags(EventPlay);
-                    }
-                }
-                else if (state == StatePlay)
-                {
-                    state = StatePause;
-                    m_pumpThread.PauseTransfer();
-                    m_evtSource.broadcastFlags(EventPause);
-                }
-                else if (state == StateIdle)
-                {
-                    currentFileInDirectory = 0;
-                    m_pumpThread.ResetPathtoBase();
-                    char* basePath = m_pumpThread.AccessPathBuffer();
-                    if (QueryCurrentFilename(currentFileInDirectory, basePath) == true)
-                    {
-                        state = StatePlay;
-                        m_pumpThread.StartTransfer();
-                    }
-                }
-            }
-            if (flags & NEXT)
-            {
-                if (state == StatePlay)
-                {
-                    state = StateNext;
-                    m_pumpThread.StopTransfer();
-                }
-            }
-            if (flags & PREV)
-            {
-                if (state == StatePlay)
-                {
-                    state = StatePrev;
-                    m_pumpThread.StopTransfer();
+                    chprintf(DEBUG_CANNEL, "ModulePlayer: play file %s.\r\n", basePath);
+                    m_pumpThread.StartTransfer();
                 }
             }
         }
+        else if (evt & EVENTMASK_COMMAND_NEXT)
+        {
+            if (state == StatePlay)
+            {
+                state = StateNext;
+                m_pumpThread.StopTransfer();
+            }
+        }
+        else if (evt & EVENTMASK_COMMAND_PREV)
+        {
+            if (state == StatePlay)
+            {
+                state = StatePrev;
+                m_pumpThread.StopTransfer();
+            }
+        }
     }
-
-    m_internalEventSource.unregister(&commandListener);
 }
 
 void ModulePlayer::RegisterListener(chibios_rt::EvtListener* listener, eventmask_t mask)
@@ -221,17 +228,18 @@ void ModulePlayer::Play(const char* path)
 {
     if (path == NULL)
     {
-        m_internalEventSource.broadcastFlags(PLAY_FILE);
+        m_moduleThread.signalEvents(EVENTMASK_COMMAND_STOP);
     }
     else
     {
-        FileNameMsg* msg = (FileNameMsg*)m_MsgObjectPool.alloc();
+        Message* msg = (Message*)m_MsgObjectPool.alloc();
         if (msg != NULL)
         {
+            msg->evtMask = EVENTMASK_COMMAND_PLAY;
             strcpy(msg->fileName, path);
             if (m_Mailbox.post(msg, MS2ST(1)) == MSG_OK)
             {
-                m_internalEventSource.broadcastFlags(PLAY_FILE);
+                m_moduleThread.signalEvents(EVENTMASK_MAIL);
             }
             else
             {
@@ -243,22 +251,22 @@ void ModulePlayer::Play(const char* path)
 
 void ModulePlayer::Toggle(void)
 {
-    m_internalEventSource.broadcastFlags(PAUSE);
+    m_moduleThread.signalEvents(EVENTMASK_COMMAND_PAUSE);
 }
 
 void ModulePlayer::Stop(void)
 {
-    m_internalEventSource.broadcastFlags(STOP);
+    m_moduleThread.signalEvents(EVENTMASK_COMMAND_STOP);
 }
 
 void ModulePlayer::Next(void)
 {
-    m_internalEventSource.broadcastFlags(NEXT);
+    m_moduleThread.signalEvents(EVENTMASK_COMMAND_NEXT);
 }
 
 void ModulePlayer::Prev(void)
 {
-    m_internalEventSource.broadcastFlags(PREV);
+    m_moduleThread.signalEvents(EVENTMASK_COMMAND_PREV);
 }
 
 void ModulePlayer::Volume(uint8_t volume)
@@ -266,6 +274,20 @@ void ModulePlayer::Volume(uint8_t volume)
 //    m_codecMutex.lock();
 //    VS1053SetVolume(m_codec, volume, volume);
 //    m_codecMutex.lock();
+    Message* msg = (Message*)m_MsgObjectPool.alloc();
+    if (msg != NULL)
+    {
+        msg->evtMask = EVENTMASK_COMMAND_VOLUME;
+        msg->volume = volume;
+        if (m_Mailbox.post(msg, MS2ST(1)) == MSG_OK)
+        {
+            m_moduleThread.signalEvents(EVENTMASK_MAIL);
+        }
+        else
+        {
+            m_MsgObjectPool.free(msg);
+        }
+    }
 }
 
 bool ModulePlayer::QueryCurrentFilename(uint16_t wantedFileId, char* path)
@@ -377,6 +399,19 @@ void ModulePlayer::PumpThread::StopTransfer()
     chibios_rt::System::unlock();
 }
 
+void ModulePlayer::PumpThread::SetVolume(uint8_t volume)
+{
+    chibios_rt::System::lock();
+    m_volume = volume;
+    chibios_rt::System::unlock();
+
+    m_codecMutex.lock();
+    {
+        VS1053SetVolume(CODEC, volume, volume);
+    }
+    m_codecMutex.unlock();
+}
+
 void ModulePlayer::PumpThread::SetBasePath(const char* path)
 {
     memset(m_pathbuffer, 0, sizeof(m_pathbuffer));
@@ -440,6 +475,7 @@ void ModulePlayer::PumpThread::main()
         chibios_rt::System::lock();
         pumpData = m_pump;
         chibios_rt::System::unlock();
+
         if (pumpData == true)
         {
             FRESULT err = f_open(&fsrc, m_pathbuffer, FA_READ);
@@ -459,9 +495,14 @@ void ModulePlayer::PumpThread::main()
                 {
                     watchdog_reload(WATCHDOG_MOD_PLAYER_PUMP);
 
-                    if (m_pump == false)
+                    chibios_rt::System::lock();
+                    pumpData = m_pump;
+                    bool pausePump = m_pausePump;
+                    chibios_rt::System::unlock();
+
+                    if (pumpData == false)
                     {
-                        if (m_pausePump ==  true)
+                        if (pausePump ==  true)
                         {
                             /*pause*/
                             chThdSleep(MS2ST(1));

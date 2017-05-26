@@ -332,7 +332,7 @@ void ModuleMusicbox::ChangeVolume(int16_t diff)
         volume = 254;
     }
 
-    //mod_musicplayer_cmdVolume((uint8_t)volume);
+    m_modPlayer->Volume((uint8_t)volume);
 }
 
 void ModuleMusicbox::ProcessMifareUID(const char* pszUID)
