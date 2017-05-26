@@ -35,11 +35,11 @@
  * HAL driver system settings.
  */
 #define STM32_NO_INIT                       FALSE
-#define STM32_HSI_ENABLED                   FALSE
+#define STM32_HSI_ENABLED                   TRUE
 #define STM32_LSI_ENABLED                   TRUE
 #define STM32_HSE_ENABLED                   TRUE
 #define STM32_LSE_ENABLED                   FALSE
-#define STM32_CLOCK48_REQUIRED              FALSE
+#define STM32_CLOCK48_REQUIRED              TRUE
 #define STM32_SW                            STM32_SW_PLL
 #define STM32_PLLSRC                        STM32_PLLSRC_HSE
 #define STM32_PLLM_VALUE                    8
@@ -52,8 +52,8 @@
 #define STM32_RTCSEL                        STM32_RTCSEL_LSI
 #define STM32_RTCPRE_VALUE                  8
 /* Use lowest possible speeds also for unused clocks to save power. */
-#define STM32_MCO1SEL                       STM32_MCO1SEL_LSE
-#define STM32_MCO1PRE                       STM32_MCO1PRE_DIV5
+#define STM32_MCO1SEL                       STM32_MCO1SEL_HSI
+#define STM32_MCO1PRE                       STM32_MCO1PRE_DIV1
 #define STM32_MCO2SEL                       STM32_MCO2SEL_PLLI2S
 #define STM32_MCO2PRE                       STM32_MCO2PRE_DIV5
 #define STM32_I2SSRC                        STM32_I2SSRC_CKIN

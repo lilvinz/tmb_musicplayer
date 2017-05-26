@@ -32,7 +32,7 @@ endif
 
 # Enable this if you want link time optimizations (LTO)
 ifeq ($(USE_LTO),)
-  USE_LTO = yes
+  USE_LTO = no
 endif
 
 
@@ -60,6 +60,7 @@ include $(ROOT_DIR)/submodules/mfrc522/library.mk
 
 # FATFS
 include $(ROOT_DIR)/submodules/fatfs/library.mk
+include $(ROOT_DIR)/submodules/qos/various/fatfs_bindings/library.mk
 
 # EFFECTS
 include $(ROOT_DIR)/submodules/tmb_effects/library.mk

@@ -17,10 +17,16 @@
 
 #include "board_drivers.h"
 
+#define LED_HEARTBEAT           &LED5
 #define LED_STATUS              &LED6
-#define LED_WARNING             &LED1
+#define LED_CARDDETECT          &LED3
+#define LED_READ                &LED1
+#define LED_DECODE              &LED2
+#define LED_RFID                &LED4
 
 #define PARTITION_FW            ((BaseNVMDevice*)&nvm_part_internal_flash_fw)
+
+#define DEBUG_CANNEL (BaseSequentialStream *)&SD6
 
 /* List modules here. */
 

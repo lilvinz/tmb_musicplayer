@@ -123,6 +123,7 @@ void boardInit(void)
     /* Start status LED driver */
 #if HAL_USE_LED
     ledObjectInit(&LED1);
+    ledObjectInit(&LED2);
     ledObjectInit(&LED6);
 #endif /* HAL_USE_LED */
 
@@ -143,6 +144,14 @@ void boardInit(void)
     nvmmemoryObjectInit(&nvm_memory_bkpsram);
 #endif /* STM32_BKPRAM_ENABLE == TRUE */
 #endif /* HAL_USE_NVM_MEMORY */
+
+#if HAL_USE_SERIAL
+    sdInit();
+#endif /* HAL_USE_SERIAL */
+
+#if HAL_USE_SDC
+    sdcObjectInit (&SDCD1);
+#endif /* HAL_USE_SDC */
 }
 
 /**
@@ -155,9 +164,11 @@ void boardStart(void)
     wdgStart(&WDGD1, &WDGD1_cfg);
 #endif /* HAL_USE_WDG */
 
+
     /* Start status LED driver */
 #if HAL_USE_LED
     ledStart(&LED1, &led_1_cfg);
+    ledStart(&LED2, &led_2_cfg);
     ledStart(&LED6, &led_6_cfg);
 #endif /* HAL_USE_LED */
 
@@ -201,6 +212,14 @@ void boardStart(void)
 #endif /* HAL_USE_FLASH */
 #endif /* defined(NDEBUG) */
 
+#if HAL_USE_SERIAL
+    sdStart(&SD6,NULL);
+#endif /* HAL_USE_SERIAL */
+
+ #if HAL_USE_SDC
+    sdcStart(&SDCD1, &sdccfg);
+#endif /* HAL_USE_SDC */
+
 }
 
 /**
@@ -209,6 +228,15 @@ void boardStart(void)
  */
 void boardStop(void)
 {
+
+#if HAL_USE_SDC
+    sdcStop(&SDCD1);
+#endif /* HAL_USE_SDC */
+
+#if HAL_USE_SERIAL
+    sdStop(&SD6);
+#endif /* HAL_USE_SERIAL */
+
     /* nvm memory drivers */
 #if HAL_USE_NVM_MEMORY
 #if STM32_BKPRAM_ENABLE == TRUE
@@ -236,9 +264,12 @@ void boardStop(void)
 #if HAL_USE_LED
     ledOff(&LED6);
     ledStop(&LED6);
+    ledOff(&LED2);
+    ledStop(&LED2);
     ledOff(&LED1);
     ledStop(&LED1);
 #endif /* HAL_USE_LED */
+
 
     /* Stop watchdog */
 #if HAL_USE_WDG
