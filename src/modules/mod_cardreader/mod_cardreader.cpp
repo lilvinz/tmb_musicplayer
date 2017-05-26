@@ -111,7 +111,7 @@ void ModuleCardreader::ThreadMain()
 
 void ModuleCardreader::OnCardRemoved()
 {
-    chprintf(DEBUG_CANNEL, "Memory card removed.\r\n");
+    chprintf(DEBUG_CANNEL, "ModuleCardreader: Memory card removed.\r\n");
 
     UnmountFilesystem();
 
@@ -122,7 +122,7 @@ void ModuleCardreader::OnCardRemoved()
 
 void ModuleCardreader::OnCardInserted()
 {
-    chprintf(DEBUG_CANNEL, "Memory card inserted.\r\n");
+    chprintf(DEBUG_CANNEL, "ModuleCardreader: Memory card inserted.\r\n");
 
     if (MountFilesystem() == true)
     {
@@ -138,15 +138,15 @@ bool ModuleCardreader::MountFilesystem()
         FRESULT err;
         err = f_mount(&m_filesystem, "/mount/", 1);
         if (err != FR_OK) {
-            chprintf(DEBUG_CANNEL, "FS: f_mount() failed. Is the SD card inserted?\r\n");
+            chprintf(DEBUG_CANNEL, "ModuleCardreader: FS: f_mount() failed. Is the SD card inserted?\r\n");
             PrintFilesystemError(DEBUG_CANNEL, err);
             return false;
         }
-        chprintf(DEBUG_CANNEL, "FS: f_mount() succeeded\r\n");
+        chprintf(DEBUG_CANNEL, "ModuleCardreader: FS: f_mount() succeeded\r\n");
 
         return true;
     }
-    chprintf(DEBUG_CANNEL, "Failed to connect sdc card.\r\n");
+    chprintf(DEBUG_CANNEL, "ModuleCardreader: Failed to connect sdc card.\r\n");
 
     return false;
 }
@@ -159,12 +159,12 @@ bool ModuleCardreader::UnmountFilesystem()
 
     sdcDisconnect(&SDCD1);
     if (err != FR_OK) {
-        chprintf(DEBUG_CANNEL, "FS: f_mount() unmount failed\r\n");
+        chprintf(DEBUG_CANNEL, "ModuleCardreader: FS: f_mount() unmount failed\r\n");
         PrintFilesystemError(DEBUG_CANNEL, err);
         return false;
     }
 
-    chprintf(DEBUG_CANNEL, "FS: f_mount() unmount succeeded\r\n");
+    chprintf(DEBUG_CANNEL, "ModuleCardreader: FS: f_mount() unmount succeeded\r\n");
     return true;
 }
 
@@ -192,7 +192,7 @@ bool ModuleCardreader::CommandCD(const char* path)
     {
         return true;
     }
-    chprintf(DEBUG_CANNEL, "FS: f_opendir \"%s\" failed\r\n", path);
+    chprintf(DEBUG_CANNEL, "ModuleCardreader: FS: f_opendir \"%s\" failed\r\n", path);
     PrintFilesystemError(DEBUG_CANNEL, res);
     return false;
 }
@@ -205,14 +205,14 @@ bool ModuleCardreader::CommandFind(DIR* dp, FILINFO* fno, const char* path, cons
         return true;
     }
 
-    chprintf(DEBUG_CANNEL, "FS: f_findfirst \"%s\" in path \"%s\" failed\r\n", pattern, path);
+    chprintf(DEBUG_CANNEL, "ModuleCardreader: FS: f_findfirst \"%s\" in path \"%s\" failed\r\n", pattern, path);
     PrintFilesystemError(DEBUG_CANNEL, res);
     return false;
 }
 
 void ModuleCardreader::PrintFilesystemError(BaseSequentialStream* chp, FRESULT err)
 {
-    chprintf(chp, "\t%s.\r\n", FilesystemResultToString(err));
+    chprintf(chp, "ModuleCardreader: \t%s.\r\n", FilesystemResultToString(err));
 }
 
 const char* ModuleCardreader::FilesystemResultToString(FRESULT stat)
