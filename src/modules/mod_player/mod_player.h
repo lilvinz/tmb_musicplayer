@@ -60,6 +60,15 @@ class ModulePlayer : public qos::ThreadedModule<MOD_PLAYER_THREADSIZE>
 {
 public:
 
+    enum EventsFlags
+    {
+        EventPlay = 1 << 0,
+        EventPause = 1 << 1,
+        EventStop = 1 << 2,
+        EventNext = 1 << 3,
+        EventPrev = 1 << 4
+    };
+
     ModulePlayer();
     ~ModulePlayer();
 
@@ -73,6 +82,9 @@ public:
     void Next(void);
     void Prev(void);
     void Volume(uint8_t volume);
+
+    void RegisterListener(chibios_rt::EvtListener* listener, eventmask_t mask);
+    void UnregisterListener(chibios_rt::EvtListener* listener);
 
 
 protected:
@@ -152,7 +164,8 @@ private:
 
     PumpThread m_pumpThread;
 
-    chibios_rt::EvtSource m_eventSource;
+    chibios_rt::EvtSource m_evtSource;
+    chibios_rt::EvtSource m_internalEventSource;
     chibios_rt::ObjectsPool<FileNameMsg, MOD_PLAYER_CMD_QUEUE_SIZE> m_MsgObjectPool;
     chibios_rt::Mailbox<FileNameMsg*, MOD_PLAYER_CMD_QUEUE_SIZE> m_Mailbox;
 };
