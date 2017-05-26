@@ -1,0 +1,7 @@
+.cproject
+.dep/
+.project
+.settings/
+build/
+downloads/
+tools/
