@@ -90,6 +90,7 @@ private:
     void OnVolDownButton(Button* btn, eventflags_t flags);
     void OnRFIDEvent(eventflags_t flags);
     void OnCardReaderEvent(eventflags_t flags);
+    void OnPlayerEvent(eventflags_t flags);
 
     void RegisterButtonEvents();
     void UnregisterButtonEvents();
