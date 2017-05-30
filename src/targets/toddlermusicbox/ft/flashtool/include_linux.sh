@@ -1,3 +1,0 @@
-OPENOCD_COMMANDLINE="-f flash.oocd"
-VERSION_CHECK_URL="http://$VERSION.tar.bz2"
-VERSION_UPDATE_URL="http://"
