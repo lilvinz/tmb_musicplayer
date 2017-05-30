@@ -1,5 +1,0 @@
-language: cpp
-
-install: make arm_sdk_install
-
-script: make all
