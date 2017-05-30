@@ -1,1 +1,21 @@
 theme: jekyll-theme-tactile
+# Dependencies
+markdown:         redcarpet
+highlighter:      pygments
+
+# Permalinks
+permalink:        pretty
+
+# Setup
+title:            ToddlerMusixBox Musicplayer
+tagline:          'Music player firmware for a a toddler friendly music box'
+description:      ''
+
+author:
+  name:           'Jan Fietz'
+
+paginate:         5
+gems:             [jekyll-paginate]
+
+github:
+  repo:           https://github.com/janfietz/tmb_musicplayer
