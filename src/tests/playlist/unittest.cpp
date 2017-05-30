@@ -22,7 +22,10 @@ extern "C"
 
 #include "file.h"
 #include <iostream>
+#include <fstream>
 #include <cstring>
+
+#include "playlist.h"
 
 class TestFile : public tmb_musicplayer::File
 {
@@ -34,7 +37,7 @@ public:
 
     virtual bool Open(const char* path)
     {
-        m_file = std::ifstream(path,  std::ios::binary);
+        m_file.open(path,  std::ios::binary);
         if (m_file.fail())
         {
             return false;
@@ -46,6 +49,8 @@ public:
         m_size = m_file.tellg();
 
         m_file.seekg(0, std::ios::beg);
+
+        return true;
     }
 
     virtual char* GetString(char* buffer, int32_t bufferLength)
@@ -53,7 +58,7 @@ public:
         std::string line;
         if (std::getline(m_file, line))
         {
-            std::strcpy(buffer, line);
+            std::strcpy(buffer, line.c_str());
             return buffer;
         }
         return NULL;
@@ -69,11 +74,11 @@ public:
     };
     virtual bool Error()
     {
-        return true;
+        return m_file.fail();
     }
     virtual bool IsEOF()
     {
-        return true;
+        return  m_file.eof();
     }
 private:
     std::ifstream m_file;
@@ -98,16 +103,17 @@ protected:
 TEST_F(PlaylistTest, load)
 {
     char title[200];
-    memset(title, 0, sizeof(temp));
+    memset(title, 0, sizeof(title));
 
     TestFile plFile;
-    pl.Open("./playlist.m3u");
+    plFile.Open("./playlist.m3u");
 
-    tmb_musicplayer::Playlist pl();
+    tmb_musicplayer::Playlist pl;
+    bool loaded = pl.LoadFromFile(&plFile);
+    EXPECT_TRUE(loaded);
 
-    EXPECT_TRUE(pl.LoadFromFile(&plFile));
-
-    EXPECT_TRUE(pl.QueryNext(title, sizeof(temp)));
+    bool getFirstTitle = pl.QueryNext(title, sizeof(title));
+    EXPECT_TRUE(getFirstTitle);
 
     EXPECT_STREQ("/title1.mp3", title);
 }
