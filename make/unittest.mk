@@ -2,7 +2,7 @@
 include $(ROOT_DIR)/make/firmware-defs.mk
 
 # Flags passed to the preprocessor.
-CPPFLAGS += -I$(GTEST_DIR)/include
+CPPFLAGS += -I$(GTEST_DIR)/include -std=c++11
 
 CFLAGS += -MMD -MP -MF $(OUTDIR)/$(@F).d
 
