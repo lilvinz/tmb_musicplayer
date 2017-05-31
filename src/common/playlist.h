@@ -12,6 +12,8 @@
 
 #include "file.h"
 #include <stdint.h>
+#include <string>
+#include <array>
 
 namespace tmb_musicplayer
 {
@@ -26,13 +28,21 @@ public:
 
     bool LoadFromFile(File* file);
 
-    bool QueryNext(char* pszBuffer, int32_t bufferSize);
-    bool QueryPrev(char* pszBuffer, int32_t bufferSize);
+    bool QueryNext(std::string& buffer);
+    bool QueryPrev(std::string& buffer);
+
+    int32_t GetTitleCount() const {
+        return m_titleCount;
+    }
 private:
+    bool QueryString(std::string& buffer);
 
-    File* m_file;
+    File* m_file = NULL;
 
-    int32_t m_titleCount;
+    std::array<char, 256> m_buffer;
+
+    int32_t m_titleCount = 0;
+    int32_t m_currentReadIndex = 0;
     int32_t m_readPositions[MaxTitleCount];
 };
 }
