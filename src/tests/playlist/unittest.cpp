@@ -35,7 +35,7 @@ public:
 
     }
 
-    virtual bool Open(const char* path)
+    virtual bool Open(const std::string& path)
     {
         m_file.open(path,  std::ios::binary);
         if (m_file.fail())
@@ -53,21 +53,31 @@ public:
         return true;
     }
 
-    virtual char* GetString(char* buffer, int32_t bufferLength)
+    virtual bool GetString(std::string& buffer)
     {
+        if (IsEOF()) {
+            return false;
+        }
         std::string line;
         if (std::getline(m_file, line))
         {
-            std::strcpy(buffer, line.c_str());
-            return buffer;
+            buffer = line;
+            return true;
         }
-        return NULL;
+        return false;
     };
 
     virtual int32_t Tell()
     {
         return m_file.tellg();
     };
+
+    virtual void Seek(int32_t pos)
+    {
+        m_file.clear();
+        m_file.seekg(pos, std::ios::beg);
+    }
+
     virtual int32_t Size()
     {
         return m_size;
@@ -102,8 +112,8 @@ protected:
 
 TEST_F(PlaylistTest, load)
 {
-    char title[200];
-    memset(title, 0, sizeof(title));
+    std::string title;
+    title.reserve(256);
 
     TestFile plFile;
     plFile.Open("./playlist.m3u");
@@ -112,8 +122,10 @@ TEST_F(PlaylistTest, load)
     bool loaded = pl.LoadFromFile(&plFile);
     EXPECT_TRUE(loaded);
 
-    bool getFirstTitle = pl.QueryNext(title, sizeof(title));
+    EXPECT_EQ(pl.GetTitleCount(), 6);
+
+    bool getFirstTitle = pl.QueryNext(title);
     EXPECT_TRUE(getFirstTitle);
 
-    EXPECT_STREQ("/title1.mp3", title);
+    EXPECT_STREQ("/titel1.mp3", title.c_str());
 }
