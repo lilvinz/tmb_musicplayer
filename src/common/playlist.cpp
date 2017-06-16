@@ -7,97 +7,86 @@
  */
 #include "playlist.h"
 
-namespace tmb_musicplayer
-{
+#include <algorithm>
 
-Playlist::Playlist()
-{
+namespace tmb_musicplayer {
 
+Playlist::Playlist() {
 }
 
-Playlist::~Playlist()
-{
-
+Playlist::~Playlist() {
 }
 
-bool Playlist::LoadFromFile(File* file)
-{
+bool Playlist::LoadFromFile(File* file) {
     m_file = file;
     m_titleCount = 0;
     m_currentReadIndex = -1;
-    while (true)
-    {
+    while (true) {
         auto readPos = file->Tell();
-        std::string str(m_buffer.begin(), m_buffer.end());
-        if (file->GetString(str))
-        {
+        auto pszBuffer = &m_buffer.front();
+        if (file->GetString(pszBuffer, m_buffer.size())) {
             // filter spaces in front of the text and comments
-            auto iter = str.begin();
-            for (; iter != str.end(); ++iter)
-            {
+
+            auto iter = m_buffer.begin();
+            for (; iter != m_buffer.end(); ++iter) {
                 char c = *iter;
                 if (c == '#') {
-                    iter = str.end();
+                    iter = m_buffer.end();
                     break;
-                }
-                else if (c != ' ') {
+                } else if (c != ' ') {
                     break;
                 }
             }
 
-            if (iter != str.end())
-            {
-                m_readPositions[m_titleCount++] =readPos;
+            if (iter != m_buffer.end()) {
+                m_readPositions[m_titleCount++] = readPos;
                 if (m_titleCount == MaxTitleCount) {
                     break;
                 }
             }
-        }
-        else {
+        } else {
             break;
         }
     }
     return m_titleCount > 0;
 }
 
-bool Playlist::QueryNext(std::string& buffer)
+void Playlist::Reset()
 {
+    m_currentReadIndex = -1;
+}
+
+uint32_t Playlist::QueryNext(char* buffer, uint32_t bufferSize) {
     m_currentReadIndex++;
     if (m_currentReadIndex < m_titleCount) {
-        if (QueryString(buffer)) {
-            return true;
-        }
+        return QueryString(buffer, bufferSize);
     }
     m_currentReadIndex = m_titleCount;
 
-    return false;
+    return 0;
 }
 
-bool Playlist::QueryPrev(std::string& buffer)
-{
-    m_currentReadIndex--;
-    if (m_currentReadIndex >= 0 && m_currentReadIndex < m_titleCount) {
-        if (QueryString(buffer)) {
-            return true;
+uint32_t Playlist::QueryPrev(char* buffer, uint32_t bufferSize) {
+    if (m_currentReadIndex > 0) {
+        m_currentReadIndex--;
+        if (m_currentReadIndex < m_titleCount) {
+            return QueryString(buffer, bufferSize);
         }
     }
-    m_currentReadIndex = -1;
-
-    return false;
+    return 0;
 }
 
-bool Playlist::QueryString(std::string& buffer)
-{
-    m_file->Seek(m_readPositions[m_currentReadIndex]);
-    std::string str(m_buffer.begin(), m_buffer.end());
-    if (m_file->GetString(str))
-    {
-        buffer = str;
-        return true;
+uint32_t Playlist::QueryString(char* buffer, uint32_t bufferSize) {
+    if (m_file->Seek(m_readPositions[m_currentReadIndex])) {
+        uint32_t chars = m_file->GetString(&(m_buffer.front()), m_buffer.size());
+        if (chars > 0 && (chars < bufferSize)) {
+            std::copy(m_buffer.begin(), m_buffer.begin() + chars, buffer);
+            return chars;
+        }
     }
-    return false;
+    return 0;
 }
 
-}
+}  // namespace tmb_musicplayer
 
 /** @} */

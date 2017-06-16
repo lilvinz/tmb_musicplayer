@@ -17,6 +17,8 @@
 
 #include "button.h"
 #include "mfrc522.h"
+#include "ffile.h"
+#include "playlist.h"
 
 /*===========================================================================*/
 /* Module constants.                                                         */
@@ -97,6 +99,7 @@ private:
 
     void ChangeVolume(int16_t diff);
     void ProcessMifareUID(const char* pszUID);
+    void DoAutoNext();
 
     static size_t MifareUIDToString(const MifareUID& uid, char* psz);
 
@@ -105,6 +108,9 @@ private:
 
     ButtonData buttons[ButtonTypeCount];
     MifareUID uid;
+
+    FFile m_playlistFile;
+    Playlist m_activePlaylist;
 
     char absoluteFileNameBuffer[1024];
     char fileNameBuffer[512];

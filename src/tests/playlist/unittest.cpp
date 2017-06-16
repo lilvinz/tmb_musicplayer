@@ -12,34 +12,28 @@
     limitations under the License.
 */
 
+#include <iostream>
+#include <fstream>
+#include <cstring>
+
 #include "gtest/gtest.h"
 
-extern "C"
-{
+extern "C" {
 #include "ch.h"
 #include "qhal.h"
 }
 
 #include "file.h"
-#include <iostream>
-#include <fstream>
-#include <cstring>
-
 #include "playlist.h"
 
-class TestFile : public tmb_musicplayer::File
-{
-public:
-    TestFile()
-    {
-
+class TestFile : public tmb_musicplayer::File {
+ public:
+    TestFile() {
     }
 
-    virtual bool Open(const std::string& path)
-    {
+    virtual bool Open(const char* path) {
         m_file.open(path,  std::ios::binary);
-        if (m_file.fail())
-        {
+        if (m_file.fail()) {
             return false;
         }
 
@@ -53,67 +47,57 @@ public:
         return true;
     }
 
-    virtual bool GetString(std::string& buffer)
-    {
+    virtual uint32_t GetString(char* buffer, uint32_t bufferSize) {
         if (IsEOF()) {
             return false;
         }
         std::string line;
-        if (std::getline(m_file, line))
-        {
-            buffer = line;
-            return true;
+        if (std::getline(m_file, line)) {
+            if (line.size() < bufferSize) {
+                std::copy(line.begin(), line.end(), buffer);
+                return line.size();
+            }
         }
-        return false;
-    };
-
-    virtual int32_t Tell()
-    {
-        return m_file.tellg();
-    };
-
-    virtual void Seek(int32_t pos)
-    {
-        m_file.clear();
-        m_file.seekg(pos, std::ios::beg);
+        return 0;
     }
 
-    virtual int32_t Size()
-    {
+    virtual int32_t Tell() {
+        return m_file.tellg();
+    }
+
+    virtual bool Seek(int32_t pos) {
+        m_file.clear();
+        return m_file.seekg(pos, std::ios::beg) ? true : false;
+    }
+
+    virtual int32_t Size() {
         return m_size;
-    };
-    virtual bool Error()
-    {
+    }
+
+    virtual bool Error() {
         return m_file.fail();
     }
-    virtual bool IsEOF()
-    {
+
+    virtual bool IsEOF() {
         return  m_file.eof();
     }
-private:
+
+ private:
     std::ifstream m_file;
     int32_t m_size;
 };
 
-class PlaylistTest: public ::testing::Test
-{
-protected:
-
-    virtual void SetUp()
-    {
-
+class PlaylistTest: public ::testing::Test {
+ protected:
+    virtual void SetUp() {
     }
 
-    virtual void TearDown()
-    {
-
+    virtual void TearDown() {
     }
 };
 
-TEST_F(PlaylistTest, load)
-{
-    std::string title;
-    title.reserve(256);
+TEST_F(PlaylistTest, load) {
+    std::array<char, 256> title;
 
     TestFile plFile;
     plFile.Open("./playlist.m3u");
@@ -124,8 +108,10 @@ TEST_F(PlaylistTest, load)
 
     EXPECT_EQ(pl.GetTitleCount(), 6);
 
-    bool getFirstTitle = pl.QueryNext(title);
-    EXPECT_TRUE(getFirstTitle);
+    uint32_t firstTitleChars = pl.QueryNext(&title.front(), title.size());
+    EXPECT_GT(firstTitleChars, (uint32_t)0);
 
-    EXPECT_STREQ("/titel1.mp3", title.c_str());
+    std::string strTitle(title.begin(), title.begin() + firstTitleChars);
+
+    EXPECT_STREQ("/titel1.mp3", strTitle.c_str());
 }

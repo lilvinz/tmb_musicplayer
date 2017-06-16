@@ -205,7 +205,7 @@ void ModuleMusicbox::OnNextButton(Button* btn, eventflags_t flags)
     if (flags & Button::Pressed)
     {
         chprintf(DEBUG_CANNEL, "ModuleMusicbox: Next button pressed event.\r\n");
-        m_modPlayer->Next();
+        DoAutoNext();
     }
 }
 
@@ -215,7 +215,11 @@ void ModuleMusicbox::OnPrevButton(Button* btn, eventflags_t flags)
     if (flags & Button::Pressed)
     {
         chprintf(DEBUG_CANNEL, "ModuleMusicbox: Prev button pressed event.\r\n");
-        m_modPlayer->Prev();
+        memset(absoluteFileNameBuffer, 0, sizeof(absoluteFileNameBuffer));
+        uint32_t pathChars = m_activePlaylist.QueryPrev(absoluteFileNameBuffer, sizeof(absoluteFileNameBuffer));
+        if (pathChars > 0) {
+            m_modPlayer->Play(absoluteFileNameBuffer);
+        }
     }
 }
 
@@ -292,15 +296,7 @@ void ModuleMusicbox::OnCardReaderEvent(eventflags_t flags)
 
 void ModuleMusicbox::OnPlayerEvent(eventflags_t flags)
 {
-    if (flags & ModulePlayer::EventNext)
-    {
-        chprintf(DEBUG_CANNEL, "ModuleMusicbox: player Next.\r\n");
-    }
-    else if (flags & ModulePlayer::EventPrev)
-    {
-        chprintf(DEBUG_CANNEL, "ModuleMusicbox: player Prev.\r\n");
-    }
-    else if (flags & ModulePlayer::EventPlay)
+    if (flags & ModulePlayer::EventPlay)
     {
         chprintf(DEBUG_CANNEL, "ModuleMusicbox: player Play.\r\n");
         m_modEffects->SetMode(ModuleEffects::ModePlay);
@@ -308,16 +304,23 @@ void ModuleMusicbox::OnPlayerEvent(eventflags_t flags)
     else if (flags & ModulePlayer::EventStop)
     {
         chprintf(DEBUG_CANNEL, "ModuleMusicbox: player Stop.\r\n");
-        if (hasRFIDCard)
-        {
-            m_modEffects->SetMode(ModuleEffects::ModeStop);
-        }
-        else
-        {
-            m_modEffects->SetMode(ModuleEffects::ModeEmptyPlaylist);
-        }
+        DoAutoNext();
     }
 
+}
+
+void ModuleMusicbox::DoAutoNext() {
+    if (hasRFIDCard) {
+        memset(absoluteFileNameBuffer, 0, sizeof(absoluteFileNameBuffer));
+        uint32_t pathChars = m_activePlaylist.QueryNext(absoluteFileNameBuffer, sizeof(absoluteFileNameBuffer));
+        if (pathChars > 0) {
+            m_modPlayer->Play(absoluteFileNameBuffer);
+        } else {
+            m_modEffects->SetMode(ModuleEffects::ModeStop);
+        }
+    } else {
+        m_modEffects->SetMode(ModuleEffects::ModeEmptyPlaylist);
+    }
 }
 
 void ModuleMusicbox::ChangeVolume(int16_t diff)
@@ -348,7 +351,8 @@ void ModuleMusicbox::ProcessMifareUID(const char* pszUID)
     {
         if (m_modCardreader->CommandFind(&directory, &fileInfo, "/music", pszUID) == true)
         {
-            chprintf(DEBUG_CANNEL, "ModuleMusicbox: Found directory: %s.\r\n", pszUID);
+            chprintf(DEBUG_CANNEL, "ModuleMusicbox: Found directory: %s.\r\n",
+                pszUID);
 
             m_modEffects->SetMode(ModuleEffects::ModeStop);
 
@@ -356,7 +360,25 @@ void ModuleMusicbox::ProcessMifareUID(const char* pszUID)
             strcat(absoluteFileNameBuffer, "/music/");
             strcat(absoluteFileNameBuffer, fileInfo.lfname);
 
-            m_modPlayer->Play(absoluteFileNameBuffer);
+            if (m_modCardreader->CommandFind(&directory, &fileInfo, absoluteFileNameBuffer, "*.m3u") == true)
+            {
+                strcat(absoluteFileNameBuffer, "/");
+                strcat(absoluteFileNameBuffer, fileInfo.lfname);
+                chprintf(DEBUG_CANNEL, "ModuleMusicbox: Found playlist: %s .\r\n", absoluteFileNameBuffer);
+                if (m_playlistFile.Open(absoluteFileNameBuffer) == true) {
+                    m_activePlaylist.LoadFromFile(&m_playlistFile);
+
+                    uint32_t pathChars = m_activePlaylist.QueryNext(absoluteFileNameBuffer, sizeof(absoluteFileNameBuffer));
+                    if (pathChars > 0) {
+                        m_modPlayer->Play(absoluteFileNameBuffer);
+                    }
+                }
+            }
+            else
+            {
+                m_modPlayer->Play(absoluteFileNameBuffer);
+            }
+
         }
     }
 

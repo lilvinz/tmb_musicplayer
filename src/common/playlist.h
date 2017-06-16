@@ -28,14 +28,15 @@ public:
 
     bool LoadFromFile(File* file);
 
-    bool QueryNext(std::string& buffer);
-    bool QueryPrev(std::string& buffer);
+    void Reset();
+    uint32_t QueryNext(char* buffer, uint32_t bufferSize);
+    uint32_t QueryPrev(char* buffer, uint32_t bufferSize);
 
     int32_t GetTitleCount() const {
         return m_titleCount;
     }
 private:
-    bool QueryString(std::string& buffer);
+    uint32_t QueryString(char* buffer, uint32_t bufferSize);
 
     File* m_file = NULL;
 

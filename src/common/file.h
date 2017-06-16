@@ -12,6 +12,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <array>
 
 namespace tmb_musicplayer
 {
@@ -20,10 +21,10 @@ class File
 {
 public:
 
-    virtual bool Open(const std::string& path) = 0;
-    virtual bool GetString(std::string& buffer) = 0;
+    virtual bool Open(const char* path) = 0;
+    virtual uint32_t GetString(char* buffer, uint32_t bufferSize) = 0;
     virtual int32_t Tell() = 0;
-    virtual void Seek(int32_t pos) = 0;
+    virtual bool Seek(int32_t pos) = 0;
     virtual int32_t Size() = 0;
     virtual bool Error() = 0;
     virtual bool IsEOF() = 0;

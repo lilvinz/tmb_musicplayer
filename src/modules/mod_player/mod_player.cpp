@@ -28,13 +28,12 @@ tmb_musicplayer::ModulePlayer tmb_musicplayer::ModulePlayerSingelton::instance =
 
 #define EVENTMASK_PUMPTHREAD_STOP EVENT_MASK(0)
 #define EVENTMASK_PUMPTHREAD_START EVENT_MASK(1)
-#define EVENTMASK_COMMAND_PLAY EVENT_MASK(2)
-#define EVENTMASK_COMMAND_STOP EVENT_MASK(3)
-#define EVENTMASK_COMMAND_PREV EVENT_MASK(4)
-#define EVENTMASK_COMMAND_NEXT EVENT_MASK(5)
-#define EVENTMASK_COMMAND_VOLUME EVENT_MASK(6)
-#define EVENTMASK_COMMAND_PAUSE EVENT_MASK(7)
-#define EVENTMASK_MAIL EVENT_MASK(8)
+#define EVENTMASK_PUMPTHREAD_ABORT EVENT_MASK(2)
+#define EVENTMASK_COMMAND_PLAY EVENT_MASK(3)
+#define EVENTMASK_COMMAND_STOP EVENT_MASK(4)
+#define EVENTMASK_COMMAND_VOLUME EVENT_MASK(5)
+#define EVENTMASK_COMMAND_PAUSE EVENT_MASK(6)
+#define EVENTMASK_MAIL EVENT_MASK(7)
 
 namespace tmb_musicplayer
 {
@@ -74,9 +73,8 @@ void ModulePlayer::ThreadMain()
     chRegSetThreadName("player");
 
     State state = StateIdle;
-
-    uint16_t currentFileInDirectory = 0;
-
+    bool hasNewTitle = false;
+    char m_pathbuffer[512];
     while (chThdShouldTerminateX() == false)
     {
         eventmask_t evt = chEvtWaitAny(ALL_EVENTS);
@@ -87,46 +85,22 @@ void ModulePlayer::ThreadMain()
         }
         else if (evt & EVENTMASK_PUMPTHREAD_STOP)
         {
-            bool startPlaying = false;
-            if (state == StateNext || state == StatePlay)
-            {
-                ++currentFileInDirectory;
-                startPlaying = true;
-            }
-            else if (state == StatePrev && currentFileInDirectory > 0)
-            {
-                --currentFileInDirectory;
-                startPlaying = true;
-            }
-
-            if (startPlaying == true)
-            {
-                m_pumpThread.ResetPathtoBase();
-                char* basePath = m_pumpThread.AccessPathBuffer();
-                if (QueryCurrentFilename(currentFileInDirectory, basePath) == true)
-                {
-                    chprintf(DEBUG_CANNEL, "ModulePlayer: play file %s.\r\n", basePath);
-                    if (state == StatePrev)
-                    {
-                        m_evtSource.broadcastFlags(EventPrev);
-                    }
-                    else if (state == StateNext)
-                    {
-                        m_evtSource.broadcastFlags(EventNext);
-                    }
-                    m_pumpThread.StartTransfer();
-                }
-                else
-                {
-                    state = StateIdle;
-                    m_evtSource.broadcastFlags(EventStop);
-                }
+            state = StateIdle;
+            m_evtSource.broadcastFlags(EventStop);
+        }
+        else if (evt & EVENTMASK_PUMPTHREAD_ABORT)
+        {
+            m_evtSource.broadcastFlags(EventAbort);
+            if (hasNewTitle) {
+                m_pumpThread.SetBasePath(m_pathbuffer);
+                chprintf(DEBUG_CANNEL, "ModulePlayer: play file %s.\r\n", m_pumpThread.AccessPathBuffer());
+                m_pumpThread.StartTransfer();
             }
             else
             {
                 state = StateIdle;
-                m_evtSource.broadcastFlags(EventStop);
             }
+            hasNewTitle = false;
         }
         else if (evt & EVENTMASK_MAIL)
         {
@@ -136,15 +110,19 @@ void ModulePlayer::ThreadMain()
             {
                 if (msg->evtMask & EVENTMASK_COMMAND_PLAY)
                 {
-                    m_pumpThread.SetBasePath(msg->fileName);
-                    currentFileInDirectory = 0;
-
-                   char* basePath = m_pumpThread.AccessPathBuffer();
-                   if (QueryCurrentFilename(currentFileInDirectory, basePath) == true)
-                   {
-                       chprintf(DEBUG_CANNEL, "ModulePlayer: play file %s.\r\n", basePath);
+                   if (state != StatePlay) {
+                       char* basePath = m_pumpThread.AccessPathBuffer();
+                       strcpy(basePath, msg->fileName);
+                       m_pumpThread.SetBasePath(msg->fileName);
+                       chprintf(DEBUG_CANNEL, "ModulePlayer: play file %s.\r\n", m_pumpThread.AccessPathBuffer());
                        m_pumpThread.StartTransfer();
+                   } else {
+                       memset(m_pathbuffer, 0, sizeof(m_pathbuffer));
+                       strcpy(m_pathbuffer, msg->fileName);
+                       hasNewTitle = true;
+                       m_pumpThread.StopTransfer();
                    }
+
                 }
                 else if (msg->evtMask & EVENTMASK_COMMAND_VOLUME)
                 {
@@ -185,30 +163,9 @@ void ModulePlayer::ThreadMain()
             }
             else if (state == StateIdle)
             {
-                currentFileInDirectory = 0;
-                m_pumpThread.ResetPathtoBase();
                 char* basePath = m_pumpThread.AccessPathBuffer();
-                if (QueryCurrentFilename(currentFileInDirectory, basePath) == true)
-                {
-                    chprintf(DEBUG_CANNEL, "ModulePlayer: play file %s.\r\n", basePath);
-                    m_pumpThread.StartTransfer();
-                }
-            }
-        }
-        else if (evt & EVENTMASK_COMMAND_NEXT)
-        {
-            if (state == StatePlay)
-            {
-                state = StateNext;
-                m_pumpThread.StopTransfer();
-            }
-        }
-        else if (evt & EVENTMASK_COMMAND_PREV)
-        {
-            if (state == StatePlay)
-            {
-                state = StatePrev;
-                m_pumpThread.StopTransfer();
+                chprintf(DEBUG_CANNEL, "ModulePlayer: play file %s.\r\n", basePath);
+                m_pumpThread.StartTransfer();
             }
         }
     }
@@ -259,16 +216,6 @@ void ModulePlayer::Stop(void)
     m_moduleThread.signalEvents(EVENTMASK_COMMAND_STOP);
 }
 
-void ModulePlayer::Next(void)
-{
-    m_moduleThread.signalEvents(EVENTMASK_COMMAND_NEXT);
-}
-
-void ModulePlayer::Prev(void)
-{
-    m_moduleThread.signalEvents(EVENTMASK_COMMAND_PREV);
-}
-
 void ModulePlayer::Volume(uint8_t volume)
 {
 //    m_codecMutex.lock();
@@ -288,86 +235,6 @@ void ModulePlayer::Volume(uint8_t volume)
             m_MsgObjectPool.free(msg);
         }
     }
-}
-
-bool ModulePlayer::QueryCurrentFilename(uint16_t wantedFileId, char* path)
-{
-    uint16_t startId = 0;
-    return FindFileWithID(wantedFileId, startId, path);
-}
-
-bool ModulePlayer::FindFileWithID(uint16_t wantedFileId, uint16_t& folderStartId, char* pszFileNameBuffer)
-{
-    char fileNameBuffer[80];
-    FILINFO fno;
-    DIR dir;
-
-    fno.lfname = fileNameBuffer;
-    fno.lfsize = sizeof(fileNameBuffer);
-
-    char *fn;
-    int i = strlen(pszFileNameBuffer);
-    uint16_t fileId = folderStartId;
-    FRESULT res = f_opendir(&dir, pszFileNameBuffer);
-    if (res == FR_OK)
-    {
-        while (true)
-        {
-            res = f_readdir(&dir, &fno);
-            /*
-             * If the directory read failed or the
-             */
-            if (res != FR_OK || (fno.lfname[0] == 0 && fno.fname[0] == 0))
-            {
-                f_closedir(&dir);
-                folderStartId = fileId;
-                return false;
-            }
-
-            fn = fno.lfname;
-            if (fno.lfname[0] == 0)
-            {
-                fn = fno.fname;
-            }
-            /*
-             * If the directory or file begins with a '.' (hidden), continue
-             */
-            if (fn[0] == '.')
-            {
-                continue;
-            }
-            /*
-             * If the 'file' is a directory.
-             */
-            if (fno.fattrib & AM_DIR)
-            {
-                folderStartId = fileId;
-                pszFileNameBuffer[i++] = '/';
-                strcpy(&pszFileNameBuffer[i], fn);
-                if (FindFileWithID(wantedFileId, folderStartId, pszFileNameBuffer) == true)
-                {
-                    f_closedir(&dir);
-                    fileId = folderStartId;
-                    return true;
-                }
-                fileId = folderStartId;
-            }
-            else
-            {
-                if (fileId == wantedFileId)
-                {
-                    pszFileNameBuffer[i++] = '/';
-                    strcpy(&pszFileNameBuffer[i], fn);
-                    f_closedir(&dir);
-                    folderStartId = fileId;
-                    return true;
-                }
-                ++fileId;
-            }
-        }
-    }
-    folderStartId = fileId;
-    return false;
 }
 
 ModulePlayer::PumpThread::PumpThread()
@@ -475,7 +342,7 @@ void ModulePlayer::PumpThread::main()
         chibios_rt::System::lock();
         pumpData = m_pump;
         chibios_rt::System::unlock();
-
+        bool aborted = true;
         if (pumpData == true)
         {
             FRESULT err = f_open(&fsrc, m_pathbuffer, FA_READ);
@@ -500,6 +367,7 @@ void ModulePlayer::PumpThread::main()
                     bool pausePump = m_pausePump;
                     chibios_rt::System::unlock();
 
+                    aborted = true;
                     if (pumpData == false)
                     {
                         if (pausePump ==  true)
@@ -514,6 +382,7 @@ void ModulePlayer::PumpThread::main()
                     }
                     else
                     {
+                        aborted = false;
                         /*
                          * Clear the buffer.
                          */
@@ -596,6 +465,8 @@ void ModulePlayer::PumpThread::main()
                     }
                 } while (ByteRead >= ByteToRead);
 
+
+
                 f_close(&fsrc);
 
                 m_codecMutex.lock();
@@ -608,7 +479,12 @@ void ModulePlayer::PumpThread::main()
             chibios_rt::System::lock();
             m_pump = false;
             chibios_rt::System::unlock();
-            m_playerThread->signalEvents(EVENTMASK_PUMPTHREAD_STOP);
+
+            if (aborted) {
+                m_playerThread->signalEvents(EVENTMASK_PUMPTHREAD_ABORT);
+            } else {
+                m_playerThread->signalEvents(EVENTMASK_PUMPTHREAD_STOP);
+            }
         }
         chThdSleep(MS2ST(100));
     }
