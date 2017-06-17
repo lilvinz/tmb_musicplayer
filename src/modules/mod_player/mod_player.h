@@ -65,8 +65,7 @@ public:
         EventPlay = 1 << 0,
         EventPause = 1 << 1,
         EventStop = 1 << 2,
-        EventNext = 1 << 3,
-        EventPrev = 1 << 4
+        EventAbort = 1 << 3
     };
 
     ModulePlayer();
@@ -79,8 +78,6 @@ public:
     void Play(const char* path);
     void Toggle(void);
     void Stop(void);
-    void Next(void);
-    void Prev(void);
     void Volume(uint8_t volume);
 
     void RegisterListener(chibios_rt::EvtListener* listener, eventmask_t mask);

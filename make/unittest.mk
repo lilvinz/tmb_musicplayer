@@ -2,7 +2,7 @@
 include $(ROOT_DIR)/make/firmware-defs.mk
 
 # Flags passed to the preprocessor.
-CPPFLAGS += -I$(GTEST_DIR)/include
+CPPFLAGS += -I$(GTEST_DIR)/include -std=c++11
 
 CFLAGS += -MMD -MP -MF $(OUTDIR)/$(@F).d
 
@@ -20,7 +20,7 @@ LDFLAGS += -lpthread
 
 EXTRAINCDIRS += .
 ALLSRC := $(CSRC) $(wildcard ./*.c)
-ALLCPPSRC := $(wildcard ./*.cpp) $(GTEST_DIR)/src/gtest_main.cc
+ALLCPPSRC := $(CPPSRC) $(wildcard ./*.cpp) $(GTEST_DIR)/src/gtest_main.cc
 ALLSRCBASE := $(notdir $(basename $(ALLSRC) $(ALLCPPSRC)))
 ALLOBJ := $(addprefix $(OUTDIR)/, $(addsuffix .o, $(ALLSRCBASE)))
 
