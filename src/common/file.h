@@ -22,7 +22,11 @@ class File
 public:
 
     virtual bool Open(const char* path) = 0;
+    virtual bool Close() = 0;
+    virtual bool Sync() = 0;
+    virtual bool Create(const char* path) = 0;
     virtual uint32_t GetString(char* buffer, uint32_t bufferSize) = 0;
+    virtual int32_t WriteString(const char* str) = 0;
     virtual int32_t Tell() = 0;
     virtual bool Seek(int32_t pos) = 0;
     virtual int32_t Size() = 0;

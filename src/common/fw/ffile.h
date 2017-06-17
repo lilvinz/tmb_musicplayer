@@ -24,7 +24,11 @@ class FFile : public File
 public:
 
     virtual bool Open(const char* path);
+    virtual bool Close();
+    virtual bool Sync();
+    virtual bool Create(const char* path);
     virtual uint32_t GetString(char* buffer, uint32_t bufferSize);
+    virtual int32_t WriteString(const char* str);
     virtual int32_t Tell();
     virtual bool Seek(int32_t pos);
     virtual int32_t Size();

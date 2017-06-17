@@ -17,11 +17,28 @@ bool FFile::Open(const char* path) {
     return err == FR_OK;
 }
 
+bool FFile::Create(const char* path) {
+    FRESULT err = f_open(&m_ff, path, FA_OPEN_ALWAYS | FA_WRITE);
+    return err == FR_OK;
+}
+
+bool FFile::Close() {
+    return f_close(&m_ff) == FR_OK;
+}
+
+bool FFile::Sync() {
+    return f_sync(&m_ff) == FR_OK;
+}
+
 uint32_t FFile::GetString(char* buffer, uint32_t bufferSize) {
     if (f_gets(buffer, bufferSize, &m_ff) != NULL) {
         return strlen(buffer);
     }
     return 0;
+}
+
+int32_t FFile::WriteString(const char* str) {
+    return f_puts(str, &m_ff);
 }
 
 int32_t FFile::Tell() {
