@@ -283,19 +283,17 @@ void ModuleMusicbox::OnCardReaderEvent(eventflags_t flags)
     }
 }
 
-void ModuleMusicbox::OnPlayerEvent(eventflags_t flags)
-{
-    if (flags & ModulePlayer::EventPlay)
-    {
+void ModuleMusicbox::OnPlayerEvent(eventflags_t flags) {
+    if (flags & ModulePlayer::EventPlay) {
         chprintf(DEBUG_CANNEL, "ModuleMusicbox: player Play.\r\n");
         m_modEffects->SetMode(ModuleEffects::ModePlay);
-    }
-    else if (flags & ModulePlayer::EventStop)
-    {
+    } else if (flags & ModulePlayer::EventStop) {
         chprintf(DEBUG_CANNEL, "ModuleMusicbox: player Stop.\r\n");
         DoAutoNext();
+    } else if (flags & ModulePlayer::EventPause) {
+        chprintf(DEBUG_CANNEL, "ModuleMusicbox: player Pause.\r\n");
+        m_modEffects->SetMode(ModuleEffects::ModePause);
     }
-
 }
 
 void ModuleMusicbox::DoAutoNext() {
