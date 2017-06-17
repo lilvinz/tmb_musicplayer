@@ -66,7 +66,7 @@ bool sdc_lld_is_card_inserted(SDCDriver *sdcp) {
 bool sdc_lld_is_write_protected(SDCDriver *sdcp) {
 
   (void)sdcp;
-  return TRUE;
+  return FALSE;
 }
 #endif
 
