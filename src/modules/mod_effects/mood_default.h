@@ -10,6 +10,7 @@
 #define _MOOD_DEFAULT_H_
 
 #include "effect_buttons.h"
+#include "effect_randompixels.h"
 #include "mood.h"
 
 namespace tmb_musicplayer
@@ -27,6 +28,12 @@ public:
     virtual void SwitchMode(uint8_t mode);
 
 private:
+    uint8_t m_newMode = EFFECT_BUTTON_MODE_EMPTYPLAYLIST;
+    uint8_t m_currentMode = EFFECT_BUTTON_MODE_EMPTYPLAYLIST;
+    systime_t m_modeChangedTime;
+
+    bool m_showButtons = true;
+
     EffectButtonsCfg effButtons_cfg =
     {
         .play = {
@@ -82,6 +89,29 @@ private:
         .effectdata = &effButtons_data,
         .update = &EffectButtonsUpdate,
         .reset = &EffectButtonsReset,
+        .p_next = NULL,
+    };
+
+    EffectRandomPixelsCfg effRandomCfg = {
+        .spawninterval = MS2ST(1000),
+        .color = {0xFF, 0xFF, 0xFF},
+        .randomRed = true,
+        .randomGreen = true,
+        .randomBlue = true,
+    };
+
+    Color m_RandomPixelColors[5];
+    EffectRandomPixelsData effRandomData = {
+        .lastspawn = 0,
+        .pixelColors = m_RandomPixelColors,
+    };
+
+    Effect effRandomPixel =
+    {
+        .effectcfg = &effRandomCfg,
+        .effectdata = &effRandomData,
+        .update = &EffectRandomPixelsUpdate,
+        .reset = &EffectRandomPixelsReset,
         .p_next = NULL,
     };
 };
