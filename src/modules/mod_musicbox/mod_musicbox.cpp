@@ -8,7 +8,6 @@
 
 #include "mod_musicbox.h"
 
-
 #if MOD_MUSICBOX
 
 #include <stdio.h>
@@ -29,7 +28,6 @@
 #include "mod_player.h"
 #include "mod_effects.h"
 
-
 #define EVENTMASK_RFID EVENT_MASK(0)
 #define EVENTMASK_BTN_PLAY EVENT_MASK(1)
 #define EVENTMASK_BTN_NEXT EVENT_MASK(2)
@@ -39,14 +37,12 @@
 #define EVENTMASK_CARDREADER EVENT_MASK(6)
 #define EVENTMASK_PLAYER EVENT_MASK(6)
 
-namespace tmb_musicplayer
-{
+namespace tmb_musicplayer {
 
 template <>
 ModuleMusicbox ModuleMusicboxSingelton::instance = tmb_musicplayer::ModuleMusicbox();
 
-ModuleMusicbox::ModuleMusicbox()
-{
+ModuleMusicbox::ModuleMusicbox() {
     buttons[0].button = &BoardButtons::BtnPlay;
     buttons[Play].handler = &ModuleMusicbox::OnPlayButton;
     buttons[Play].evtMask = EVENTMASK_BTN_PLAY;
@@ -68,34 +64,28 @@ ModuleMusicbox::ModuleMusicbox()
     buttons[VolDown].evtMask = EVENTMASK_BTN_VOLDOWN;
 }
 
-ModuleMusicbox::~ModuleMusicbox()
-{
-
+ModuleMusicbox::~ModuleMusicbox() {
 }
 
-void ModuleMusicbox::Init()
-{
+void ModuleMusicbox::Init() {
     m_modRFID = ModuleRFIDSingelton::GetInstance();
     m_modCardreader = ModuleCardreaderSingelton::GetInstance();
     m_modPlayer = ModulePlayerSingelton::GetInstance();
     m_modEffects = ModuleEffectsSingelton::GetInstance();
 }
 
-void ModuleMusicbox::Start()
-{
+void ModuleMusicbox::Start() {
     BaseClass::Start();
 }
 
-void ModuleMusicbox::Shutdown()
-{
+void ModuleMusicbox::Shutdown() {
     BaseClass::Shutdown();
     m_modRFID = NULL;
-   m_modCardreader = NULL;
-   m_modPlayer = NULL;
+    m_modCardreader = NULL;
+    m_modPlayer = NULL;
 }
 
-void ModuleMusicbox::ThreadMain()
-{
+void ModuleMusicbox::ThreadMain() {
     chRegSetThreadName("musicbox");
 
     chibios_rt::EvtListener rfidEvtListener;
@@ -118,7 +108,6 @@ void ModuleMusicbox::ThreadMain()
     }
 
     RegisterButtonEvents();
-
 
     while (!chThdShouldTerminateX())
     {
@@ -340,64 +329,101 @@ void ModuleMusicbox::ChangeVolume(int16_t diff)
 
 void ModuleMusicbox::ProcessMifareUID(const char* pszUID)
 {
+    bool playFile = false;
+    /*search for folder*/
+    if (FindUIDDirectory(pszUID) == true) {
+        if (FindPlaylistFile(absoluteFileNameBuffer) == true) {
+            playFile = LoadPlaylist(absoluteFileNameBuffer);
+        } else {
+            CreatePlaylistFile(absoluteFileNameBuffer, sizeof(absoluteFileNameBuffer));
+            if (FindUIDDirectory(pszUID) == true) {
+                if (FindPlaylistFile(absoluteFileNameBuffer) == true) {
+                    playFile = LoadPlaylist(absoluteFileNameBuffer);
+                }
+            }
+        }
+    } else {
+        snprintf(absoluteFileNameBuffer, sizeof(absoluteFileNameBuffer), "/music/%s", pszUID);
+        if (f_mkdir(absoluteFileNameBuffer) == FR_OK) {
+            chprintf(DEBUG_CANNEL, "ModuleMusicbox: Create directory: %s.\r\n",
+                    absoluteFileNameBuffer);
+        }
+    }
+
+    if (playFile == true) {
+        uint32_t pathChars = m_activePlaylist.QueryNext(absoluteFileNameBuffer, sizeof(absoluteFileNameBuffer));
+        if (pathChars > 0) {
+            m_modPlayer->Play(absoluteFileNameBuffer);
+        }
+    }
+}
+
+bool ModuleMusicbox::LoadPlaylist(const char* fileName) {
+    if (m_playlistFile.Open(absoluteFileNameBuffer) == true) {
+        return m_activePlaylist.LoadFromFile(&m_playlistFile);
+    }
+    return false;
+}
+
+bool ModuleMusicbox::FindUIDDirectory(const char* pszUID) {
     DIR directory;
 
     FILINFO fileInfo;
     fileInfo.lfname = fileNameBuffer;
     fileInfo.lfsize = sizeof(fileNameBuffer);
-
-    /*search for folder*/
-    if (m_modCardreader != NULL)
-    {
-        if (m_modCardreader->CommandFind(&directory, &fileInfo, "/music", pszUID) == true)
-        {
+    if (m_modCardreader != NULL) {
+        if (m_modCardreader->CommandFind(&directory, &fileInfo, "/music", pszUID) == true) {
+            if ((fileInfo.fname[0] == 0) && (fileInfo.lfname[0] == 0)) {
+                return false;
+            }
             chprintf(DEBUG_CANNEL, "ModuleMusicbox: Found directory: %s.\r\n",
-                pszUID);
-
-            m_modEffects->SetMode(ModuleEffects::ModeStop);
+                    pszUID);
 
             memset(absoluteFileNameBuffer, 0, sizeof(absoluteFileNameBuffer));
             strcat(absoluteFileNameBuffer, "/music/");
             strcat(absoluteFileNameBuffer, fileInfo.lfname);
-
-            if (m_modCardreader->CommandFind(&directory, &fileInfo, absoluteFileNameBuffer, "*.m3u") == true)
-            {
-                strcat(absoluteFileNameBuffer, "/");
-                strcat(absoluteFileNameBuffer, fileInfo.lfname);
-                chprintf(DEBUG_CANNEL, "ModuleMusicbox: Found playlist: %s .\r\n", absoluteFileNameBuffer);
-                if (m_playlistFile.Open(absoluteFileNameBuffer) == true) {
-                    m_activePlaylist.LoadFromFile(&m_playlistFile);
-
-                    uint32_t pathChars = m_activePlaylist.QueryNext(absoluteFileNameBuffer, sizeof(absoluteFileNameBuffer));
-                    if (pathChars > 0) {
-                        m_modPlayer->Play(absoluteFileNameBuffer);
-                    }
-                }
-            }
-            else
-            {
-                m_modPlayer->Play(absoluteFileNameBuffer);
-            }
-
+            return true;
         }
     }
-
+    return false;
 }
 
-size_t ModuleMusicbox::MifareUIDToString(const MifareUID& uid, char* psz)
-{
-    int i;
+bool ModuleMusicbox::FindPlaylistFile(const char* path) {
+    DIR directory;
+
+    memset(fileNameBuffer, 0, sizeof(fileNameBuffer));
+    FILINFO fileInfo;
+    fileInfo.lfname = fileNameBuffer;
+    fileInfo.lfsize = sizeof(fileNameBuffer);
+    memset(fileInfo.fname, 0, sizeof(fileInfo.fname));
+
+    if (m_modCardreader != NULL) {
+        if (m_modCardreader->CommandFind(&directory, &fileInfo, path, "*.m3u") == true) {
+            if ((fileInfo.lfname[0] == 0) && (fileInfo.fname[0] == 0)) {
+                return false;
+            }
+            strcat(absoluteFileNameBuffer, "/");
+            if (fileInfo.lfname[0] > 0) {
+                strcat(absoluteFileNameBuffer, fileInfo.lfname);
+            } else
+            {
+                strcat(absoluteFileNameBuffer, fileInfo.fname);
+            }
+            chprintf(DEBUG_CANNEL, "ModuleMusicbox: Found playlist: %s .\r\n", absoluteFileNameBuffer);
+            return true;
+        }
+    }
+    return false;
+}
+
+size_t ModuleMusicbox::MifareUIDToString(const MifareUID& uid, char* psz) {
     size_t charCount = 0;
     char* pszTarget = psz;
-    for (i = 0; i < uid.size; i++)
-    {
+    for (int i = 0; i < uid.size; i++) {
         char c = 0x0f & (uid.bytes[i] >> 4);
-        if (c < 10)
-        {
+        if (c < 10) {
             *pszTarget = c + '0';
-        }
-        else
-        {
+        } else {
             *pszTarget = c + ('A' - 10);
         }
 
@@ -405,12 +431,9 @@ size_t ModuleMusicbox::MifareUIDToString(const MifareUID& uid, char* psz)
         charCount++;
 
         c = 0x0f & uid.bytes[i];
-        if (c < 10)
-        {
+        if (c < 10) {
             *pszTarget = c + '0';
-        }
-        else
-        {
+        } else {
             *pszTarget = c + ('A' - 10);
         }
 
@@ -421,6 +444,103 @@ size_t ModuleMusicbox::MifareUIDToString(const MifareUID& uid, char* psz)
     *pszTarget = 0;
     return charCount;
 }
+
+void ModuleMusicbox::CreatePlaylistFile(char* path, uint32_t pathLength) {
+    static const char* fileName = "playlist.m3u";
+    uint32_t i = strlen(path);
+    uint32_t newPathLength = i + strlen(fileName) + 1;
+    if (newPathLength < pathLength) {
+        path[i++] = '/';
+        strcpy(&path[i], fileName);
+        if (m_playlistFile.Create(path) == true) {
+            chprintf(DEBUG_CANNEL, "ModuleMusicbox: Create playlist: %s .\r\n", path);
+            // rewind path
+            path[--i] = 0;
+            AddFilesToPlaylist(path, pathLength, m_playlistFile);
+            m_playlistFile.Sync();
+            m_playlistFile.Close();
+            path[i] = 0;
+        }
+    }
+}
+
+void ModuleMusicbox::AddFilesToPlaylist(char* path, uint32_t pathLength, File& playlistFile) {
+
+    FILINFO fno;
+    fno.lfname = fileNameBuffer;
+    fno.lfsize = sizeof(fileNameBuffer);
+    /*
+     * Open the Directory.
+     */
+    DIR dir;
+    FRESULT res = f_opendir(&dir, path);
+    if (res == FR_OK) {
+        while (true) {
+
+            /*
+             * Read the Directory.
+             */
+            res = f_readdir(&dir, &fno);
+            /*
+             * If the directory read failed or the
+             */
+            if (res != FR_OK || (fno.lfname[0] == 0 && fno.fname[0] == 0)) {
+                break;
+            }
+
+            char* fn = fno.lfname;
+            if (fno.lfname[0] == 0)
+            {
+                fn = fno.fname;
+            }
+            /*
+             * If the directory or file begins with a '.' (hidden), continue
+             */
+            if (fn[0] == '.') {
+                continue;
+            }
+
+            /*
+             * If the 'file' is a directory.
+             */
+            if (fno.fattrib & AM_DIR) {
+                /*
+                 * Add a slash to the end of the path
+                 */
+                uint32_t i = strlen(path);
+                uint32_t newPathLength = i + strlen(fn) + 1;
+                if (newPathLength < pathLength) {
+                    path[i++] = '/';
+                    strcpy(&path[i], fn);
+                    AddFilesToPlaylist(path, pathLength, playlistFile);
+                    // rewind path
+                    path[--i] = 0;
+                }
+            } else {
+                //search for music file endings
+                if ((strstr(fn, ".mp3") != NULL) ||
+                        (strstr(fn, ".ogg") != NULL) ||
+                        (strstr(fn, ".aac") != NULL) ||
+                        (strstr(fn, ".wma") != NULL)){
+                    // add filename to file
+                    uint32_t i = strlen(path);
+                    uint32_t newPathLength = i + strlen(fn) + 1;
+                    if (newPathLength < pathLength) {
+                        path[i++] = '/';
+                        strcpy(&path[i], fn);
+                        if (playlistFile.WriteString(path) > 0) {
+                            playlistFile.WriteString("\r\n");
+                            chprintf(DEBUG_CANNEL, "ModuleMusicbox: Add file: %s .\r\n", path);
+                        }
+                        // rewind path
+                        path[--i] = 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 }
 
