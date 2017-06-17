@@ -23,8 +23,8 @@ extern "C" {
 #include "qhal.h"
 }
 
-#include "file.h"
-#include "playlist.h"
+#include "common/file.h"
+#include "common/playlist.h"
 
 class TestFile : public tmb_musicplayer::File {
  public:
@@ -46,6 +46,16 @@ class TestFile : public tmb_musicplayer::File {
 
         return true;
     }
+    virtual bool Close() {
+        m_file.close();
+        return true;
+    }
+    virtual bool Sync() {
+        return true;
+    }
+    virtual bool Create(const char* path) {
+        return false;
+    }
 
     virtual uint32_t GetString(char* buffer, uint32_t bufferSize) {
         if (IsEOF()) {
@@ -58,6 +68,10 @@ class TestFile : public tmb_musicplayer::File {
                 return line.size();
             }
         }
+        return 0;
+    }
+
+    virtual int32_t WriteString(const char* str) {
         return 0;
     }
 
